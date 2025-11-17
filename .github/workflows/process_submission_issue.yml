@@ -19,8 +19,13 @@ jobs:
       - name: Extract username
         id: extract
         run: |
-          USERNAME=$(echo "${{ github.event.issue.body }}" | grep -A1 "GitHub Username" | tail -1 | xargs)
+          USERNAME=$(echo "${{ github.event.issue.body }}" | grep -A2 "GitHub Username" | tail -1 | xargs)
+          if [ -z "$USERNAME" ]; then
+            echo "Failed to extract username, using issue creator"
+            USERNAME="${{ github.event.issue.user.login }}"
+          fi
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
+          echo "Extracted username: $USERNAME"
       
       - name: Download attachments
         id: download
@@ -123,4 +128,15 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: body
+            });
+      - name: Close issue
+        if: steps.validate.outputs.validation_failed != 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.update({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed'
             });

@@ -6,8 +6,8 @@ body:
   - type: input
     id: username
     attributes:
-      label: GitHub Username
-      description: Your GitHub username (will be used for leaderboard)
+      label: GitHub Username or Model Name
+      description: Your GitHub username or model name (will be used for leaderboard)
       placeholder: "your_username"
     validations:
       required: true
