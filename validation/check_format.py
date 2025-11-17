@@ -17,7 +17,7 @@ def validate_submission(submission_dir, test_dir="data/public_test"):
   for filename in submission_files:
     filepath = os.path.join(submission_dir, filename)
     try:
-      df = pd.read_excel(filepath)
+      df = pd.read_csv(filepath)
     except Exception as e:
       errors.append(f"{filename}: Cannot read Excel file - {e}")
       continue
