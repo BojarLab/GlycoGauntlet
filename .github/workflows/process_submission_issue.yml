@@ -78,28 +78,46 @@ jobs:
         run: |
           python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public || echo "validation_failed=true" >> $GITHUB_OUTPUT
       
-      - name: Create Pull Request
+      - name: Evaluate submission
         if: steps.validate.outputs.validation_failed != 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Submission from ${{ steps.extract.outputs.username }}"
-          branch: submission-${{ steps.extract.outputs.username }}-${{ github.event.issue.number }}
-          title: "Submission: ${{ steps.extract.outputs.username }}"
-          body: |
-            Automated submission from issue #${{ github.event.issue.number }}
-            
-            Submitted by: @${{ steps.extract.outputs.username }}
-          labels: submission
+        id: evaluate
+        run: |
+          pip install pandas numpy scipy openpyxl glycowork
+          RESULT=$(python evaluation/evaluate_submission.py submissions/${{ steps.extract.outputs.username }}/public)
+          SCORE=$(echo "$RESULT" | grep "Average F1:" | awk '{print $3}')
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "$RESULT" > eval_result.txt
       
-      - name: Comment on issue
+      - name: Update leaderboard
+        if: steps.validate.outputs.validation_failed != 'true'
+        run: |
+          python leaderboard/update_leaderboard.py \
+            "${{ steps.extract.outputs.username }}" \
+            "${{ steps.evaluate.outputs.score }}" \
+            "public"
+      
+      - name: Commit leaderboard changes
+        if: steps.validate.outputs.validation_failed != 'true'
+        run: |
+          git config user.name "Competition Bot"
+          git config user.email "bot@github.com"
+          git add leaderboard/ submissions/
+          git commit -m "Add submission from ${{ steps.extract.outputs.username }}" || echo "No changes"
+          git push
+      
+      - name: Comment results on issue
         uses: actions/github-script@v6
         with:
           script: |
             const validation_failed = '${{ steps.validate.outputs.validation_failed }}' === 'true';
-            const body = validation_failed 
-              ? '❌ Validation failed. Please check your file format and try again.'
-              : '✅ Submission received! Your PR has been created and evaluation is running.';
+            let body;
+            if (validation_failed) {
+              body = '❌ Validation failed. Please check your file format and try again.';
+            } else {
+              const fs = require('fs');
+              const result = fs.readFileSync('eval_result.txt', 'utf8');
+              body = `## ✅ Submission Evaluated!\n\n\`\`\`\n${result}\n\`\`\`\n\nCheck the leaderboard: [leaderboard/public.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/leaderboard/public.md)`;
+            }
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
