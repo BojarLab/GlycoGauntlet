@@ -1,9 +1,8 @@
 # Public Test Leaderboard
 
-Last updated: 2025-11-17 12:00:00 UTC
+Last updated: 2025-11-17 13:32:49 UTC
 
 | Rank | Username | Best F1 Score | Submissions |
 |------|----------|---------------|-------------|
-| 1 | baseline | 0.000 | 1 |
-
-No submissions yet. Be the first to compete!
+| 1 |  | 0.5431 | 1 |
+| 2 | baseline | 0.0000 | 1 |

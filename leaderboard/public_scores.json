@@ -1,10 +1,19 @@
 {
   "baseline": {
-    "best_score": 0.00,
+    "best_score": 0.0,
     "submissions": [
       {
-        "score": 0.00,
+        "score": 0.0,
         "timestamp": "2025-11-17T12:00:00"
+      }
+    ]
+  },
+  "": {
+    "best_score": 0.5431,
+    "submissions": [
+      {
+        "score": 0.5431,
+        "timestamp": "2025-11-17T13:32:49.810949"
       }
     ]
   }
