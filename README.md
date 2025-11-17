@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="glyco_gauntlet_logo.png" alt="GlycoGauntlet Logo" width="400"/>
+</p>
+
 # GlycoGauntlet
 
 Predict glycan structures from mass spectrometry glycomics data. Beat our deep learning model (CandyCrunch) or provide expert manual annotations.
