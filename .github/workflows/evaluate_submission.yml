@@ -1,0 +1,75 @@
+name: Evaluate Submission
+
+on:
+  pull_request:
+    paths:
+      - 'submissions/**'
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scipy openpyxl
+          pip install glycowork
+      
+      - name: Extract submission info
+        id: submission_info
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+          SUBMISSION_DIR=$(echo "$CHANGED_FILES" | grep "submissions/" | head -1 | cut -d'/' -f1-3 | sort -u)
+          USERNAME=$(echo "$SUBMISSION_DIR" | cut -d'/' -f2)
+          echo "submission_dir=$SUBMISSION_DIR" >> $GITHUB_OUTPUT
+          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+      
+      - name: Validate submission format
+        run: |
+          python validation/check_format.py ${{ steps.submission_info.outputs.submission_dir }}
+      
+      - name: Evaluate submission
+        id: evaluate
+        run: |
+          RESULT=$(python evaluation/evaluate_submission.py ${{ steps.submission_info.outputs.submission_dir }})
+          SCORE=$(echo "$RESULT" | grep "Average F1:" | awk '{print $3}')
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "$RESULT" > eval_result.txt
+      
+      - name: Update leaderboard
+        run: |
+          python leaderboard/update_leaderboard.py \
+            "${{ steps.submission_info.outputs.username }}" \
+            "${{ steps.evaluate.outputs.score }}" \
+            "public"
+      
+      - name: Commit leaderboard changes
+        run: |
+          git config user.name "Competition Bot"
+          git config user.email "bot@github.com"
+          git add leaderboard/
+          git commit -m "Update leaderboard for ${{ steps.submission_info.outputs.username }}" || echo "No changes to commit"
+          git push
+      
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const result = fs.readFileSync('eval_result.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Evaluation Results\n\n\`\`\`\n${result}\n\`\`\`\n\nYour submission has been evaluated! Check the updated leaderboard at [leaderboard/public.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/leaderboard/public.md)`
+            });
