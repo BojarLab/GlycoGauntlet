@@ -12,13 +12,21 @@ body:
     validations:
       required: true
   - type: textarea
-    id: files
+    id: public_files
     attributes:
-      label: Prediction Files
-      description: Attach your CSV submission files below (drag and drop). Files must match test set names (e.g., sample_001_submission.csv)
-      placeholder: "Drag your CSV files here..."
+      label: Public Test Predictions
+      description: Attach your PUBLIC test CSV files (these will be automatically evaluated)
+      placeholder: "Drag your public test CSV files here..."
     validations:
-      required: true
+      required: false
+  - type: textarea
+    id: private_files
+    attributes:
+      label: Private Test Predictions
+      description: Attach your PRIVATE test CSV files (these will be stored for final evaluation)
+      placeholder: "Drag your private test CSV files here..."
+    validations:
+      required: false
   - type: checkboxes
     id: confirmation
     attributes:

@@ -36,15 +36,16 @@ jobs:
             const path = require('path');
             const https = require('https');
             const issue = context.payload.issue;
+            const publicSection = issue.body.match(/### Public Test Predictions\s+([\s\S]*?)###/);
+            const privateSection = issue.body.match(/### Private Test Predictions\s+([\s\S]*?)###/);
             const attachmentRegex = /https:\/\/github\.com\/.*?\/files\/\d+\/[^\s)]+\.csv/g;
-            const attachments = issue.body.match(attachmentRegex) || [];
-            if (attachments.length === 0) {
-              core.setFailed('No CSV attachments found in issue');
+            const publicUrls = publicSection ? (publicSection[1].match(attachmentRegex) || []) : [];
+            const privateUrls = privateSection ? (privateSection[1].match(attachmentRegex) || []) : [];
+            if (publicUrls.length === 0 && privateUrls.length === 0) {
+              core.setFailed('No CSV attachments found');
               return;
             }
-            const dir = 'temp_submissions';
-            fs.mkdirSync(dir, {recursive: true});
-            for (const url of attachments) {
+            const downloadFile = async (url, dir) => {
               const filename = path.basename(url.split('?')[0]);
               await new Promise((resolve, reject) => {
                 https.get(url, {followAllRedirects: true}, (response) => {
@@ -61,13 +62,29 @@ jobs:
                   }
                 }).on('error', reject);
               });
+            };
+            fs.mkdirSync('temp_submissions/public', {recursive: true});
+            fs.mkdirSync('temp_submissions/private', {recursive: true});
+            for (const url of publicUrls) {
+              await downloadFile(url, 'temp_submissions/public');
             }
-            return attachments.length;
+            for (const url of privateUrls) {
+              await downloadFile(url, 'temp_submissions/private');
+            }
+            core.setOutput('has_public', publicUrls.length > 0);
+            core.setOutput('has_private', privateUrls.length > 0);
+            return publicUrls.length + privateUrls.length;
       
       - name: Create submission structure
         run: |
           mkdir -p submissions/${{ steps.extract.outputs.username }}/public
-          mv temp_submissions/*.csv submissions/${{ steps.extract.outputs.username }}/public/
+          mkdir -p submissions/${{ steps.extract.outputs.username }}/private
+          if [ -d temp_submissions/public ] && [ "$(ls -A temp_submissions/public)" ]; then
+            mv temp_submissions/public/*.csv submissions/${{ steps.extract.outputs.username }}/public/ || true
+          fi
+          if [ -d temp_submissions/private ] && [ "$(ls -A temp_submissions/private)" ]; then
+            mv temp_submissions/private/*.csv submissions/${{ steps.extract.outputs.username }}/private/ || true
+          fi
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -81,10 +98,12 @@ jobs:
       - name: Validate format
         id: validate
         run: |
-          python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public || echo "validation_failed=true" >> $GITHUB_OUTPUT
+          if [ "${{ steps.download.outputs.has_public }}" == "true" ]; then
+            python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public || echo "validation_failed=true" >> $GITHUB_OUTPUT
+          fi
       
       - name: Evaluate submission
-        if: steps.validate.outputs.validation_failed != 'true'
+        if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true'
         id: evaluate
         run: |
           pip install pandas numpy scipy openpyxl glycowork
@@ -94,14 +113,14 @@ jobs:
           echo "$RESULT" > eval_result.txt
       
       - name: Update leaderboard
-        if: steps.validate.outputs.validation_failed != 'true'
+        if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true'
         run: |
           python leaderboard/update_leaderboard.py \
             "${{ steps.extract.outputs.username }}" \
             "${{ steps.evaluate.outputs.score }}" \
             "public"
       
-      - name: Commit leaderboard changes
+      - name: Commit changes
         if: steps.validate.outputs.validation_failed != 'true'
         run: |
           git config user.name "Competition Bot"
@@ -115,13 +134,22 @@ jobs:
         with:
           script: |
             const validation_failed = '${{ steps.validate.outputs.validation_failed }}' === 'true';
+            const has_public = '${{ steps.download.outputs.has_public }}' === 'true';
+            const has_private = '${{ steps.download.outputs.has_private }}' === 'true';
             let body;
             if (validation_failed) {
               body = '❌ Validation failed. Please check your file format and try again.';
             } else {
-              const fs = require('fs');
-              const result = fs.readFileSync('eval_result.txt', 'utf8');
-              body = `## ✅ Submission Evaluated!\n\n\`\`\`\n${result}\n\`\`\`\n\nCheck the leaderboard: [leaderboard/public.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/leaderboard/public.md)`;
+              let parts = [];
+              if (has_public) {
+                const fs = require('fs');
+                const result = fs.readFileSync('eval_result.txt', 'utf8');
+                parts.push(`## ✅ Public Test Evaluated!\n\n\`\`\`\n${result}\n\`\`\`\n\nCheck the leaderboard: [leaderboard/public.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/leaderboard/public.md)`);
+              }
+              if (has_private) {
+                parts.push(`## 📦 Private Test Files Received\n\nYour private test predictions have been stored and will be evaluated after the competition ends.`);
+              }
+              body = parts.join('\n\n');
             }
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -129,6 +157,7 @@ jobs:
               repo: context.repo.repo,
               body: body
             });
+            
       - name: Close issue
         if: steps.validate.outputs.validation_failed != 'true'
         uses: actions/github-script@v6
