@@ -4,7 +4,7 @@ Predict glycan structures from mass spectrometry glycomics data. Beat our deep l
 
 ## Task
 
-Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: XXX). Input files contain m/z, retention time, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
+Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: XXX). Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
 
 ## Evaluation
 

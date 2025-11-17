@@ -6,8 +6,12 @@ on:
 
 jobs:
   process:
-    if: contains(github.event.issue.labels.*.name, 'submission')
+    if: startsWith(github.event.issue.title, '[Submission]')
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
