@@ -25,7 +25,7 @@ Your predictions must be Excel files matching the input filenames, with this exa
 | Column | Type | Description |
 |--------|------|-------------|
 | m/z | float | Observed mass-to-charge ratio |
-| charge | float | Signed charge (e.g., -1 for negative mode) |
+| charge | int | Signed charge (e.g., -1 for negative mode) |
 | RT | float | Retention time in minutes |
 | top1_pred | str | Predicted glycan in IUPAC-condensed notation |
 
@@ -38,14 +38,13 @@ m/z: 1235.19, charge: -1, RT: 17.63, top1_pred: Man(a1-3)[Man(a1-6)]Man(a1-6)[Ma
 
 ## How to Participate
 
-1. Fork this repository
-2. Run your model or manually annotate the files in `data/public_test/`
-3. Save predictions as Excel files in `submissions/{your_github_username}/public/`
-4. Ensure filenames match the test files exactly (e.g., if test file is `sample_001.xlsx`, prediction must be `sample_001_submission.csv`)
-5. Run `python validation/check_format.py submissions/{your_github_username}/public/` to verify format
-6. Open a pull request
+1. Prepare your prediction CSV files following the format above
+2. Validate locally: `python validation/check_format.py your_predictions/`
+3. Go to [Issues](../../issues/new/choose) and select "Submit Predictions"
+4. Enter your GitHub username and attach your CSV files
+5. Submit the issue
 
-GitHub Actions will automatically evaluate your submission on the public test set and update the leaderboard. You can submit multiple times; only your best score counts.
+A bot will automatically create a PR, run evaluation, and update the leaderboard. Check the issue for status updates.
 
 ## Baseline
 

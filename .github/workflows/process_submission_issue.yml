@@ -1,0 +1,96 @@
+name: Process Submission from Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  process:
+    if: contains(github.event.issue.labels.*.name, 'submission')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Extract username
+        id: extract
+        run: |
+          USERNAME=$(echo "${{ github.event.issue.body }}" | grep -A1 "GitHub Username" | tail -1 | xargs)
+          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+      
+      - name: Download attachments
+        id: download
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const https = require('https');
+            const issue = context.payload.issue;
+            const attachmentRegex = /https:\/\/github\.com\/.*?\/files\/\d+\/[^\s)]+\.csv/g;
+            const attachments = issue.body.match(attachmentRegex) || [];
+            if (attachments.length === 0) {
+              core.setFailed('No CSV attachments found in issue');
+              return;
+            }
+            const dir = 'temp_submissions';
+            fs.mkdirSync(dir, {recursive: true});
+            for (const url of attachments) {
+              const filename = path.basename(url.split('?')[0]);
+              const file = fs.createWriteStream(path.join(dir, filename));
+              await new Promise((resolve, reject) => {
+                https.get(url, (response) => {
+                  response.pipe(file);
+                  file.on('finish', () => file.close(resolve));
+                }).on('error', reject);
+              });
+            }
+            return attachments.length;
+      
+      - name: Create submission structure
+        run: |
+          mkdir -p submissions/${{ steps.extract.outputs.username }}/public
+          mv temp_submissions/*.csv submissions/${{ steps.extract.outputs.username }}/public/
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install pandas openpyxl
+      
+      - name: Validate format
+        id: validate
+        run: |
+          python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public || echo "validation_failed=true" >> $GITHUB_OUTPUT
+      
+      - name: Create Pull Request
+        if: steps.validate.outputs.validation_failed != 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Submission from ${{ steps.extract.outputs.username }}"
+          branch: submission-${{ steps.extract.outputs.username }}-${{ github.event.issue.number }}
+          title: "Submission: ${{ steps.extract.outputs.username }}"
+          body: |
+            Automated submission from issue #${{ github.event.issue.number }}
+            
+            Submitted by: @${{ steps.extract.outputs.username }}
+          labels: submission
+      
+      - name: Comment on issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const validation_failed = '${{ steps.validate.outputs.validation_failed }}' === 'true';
+            const body = validation_failed 
+              ? '❌ Validation failed. Please check your file format and try again.'
+              : '✅ Submission received! Your PR has been created and evaluation is running.';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

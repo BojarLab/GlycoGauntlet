@@ -1,0 +1,30 @@
+name: Submit Predictions
+description: Submit your glycan structure predictions
+title: "[Submission] YOUR_USERNAME"
+labels: ["submission"]
+body:
+  - type: input
+    id: username
+    attributes:
+      label: GitHub Username
+      description: Your GitHub username (will be used for leaderboard)
+      placeholder: "your_username"
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Prediction Files
+      description: Attach your CSV submission files below (drag and drop). Files must match test set names (e.g., sample_001_submission.csv)
+      placeholder: "Drag your CSV files here..."
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have validated my files using `python validation/check_format.py`
+          required: true
+        - label: My CSV files follow the required format (m/z, RT, charge, top1_pred columns)
+          required: true
