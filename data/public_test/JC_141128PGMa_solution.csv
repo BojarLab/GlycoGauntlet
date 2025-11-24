@@ -1,9 +1,10 @@
 Mass,RT,glycan
 384.15,10.61,Gal(b1-3)GalNAc
+384.15,14.31,Gal(b1-3/4)HexNAc
 530.21,17.46,Fuc(a1-2)[GalNAc(a1-3)]Gal
 530.21,28.91,Fuc(a1-2)Gal(b1-3)GalNAc
-587.25,9.88,Gal(b1-3)[GlcNAc(b1-6)]GalNAc
-587.42,15.85,GlcNAc(a1-4)Gal(b1-3)GalNAc
+587.25,15.85,Gal(b1-3)[GlcNAc(b1-6)]GalNAc
+587.42,16.92,GlcNAc(a1-4)Gal(b1-3)GalNAc
 667.33,19.64,Gal(b1-3)[GlcNAc6S(b1-6)]GalNAc
 675.25,19.29,Neu5Ac(a2-3)Gal(b1-3)GalNAc
 675.42,16.64,Gal(b1-3)[Neu5Ac(a2-6)]GalNAc

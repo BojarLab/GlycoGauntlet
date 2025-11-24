@@ -41,16 +41,20 @@ def match_spectra(array1, array2, mass_threshold=MASS_TOLERANCE, rt_threshold=RT
   return matches
 
 def add_pred_column(df_in, col_name, matches, pred_df, rt_col):
+  df_in = df_in.copy()
   df_in[col_name] = None
+  df_in['in_ground_truth'] = True
   for gt_idx, pred_idx in matches:
     df_in.at[gt_idx, col_name] = pred_df.iloc[pred_idx, :]['top1_pred']
   extra_preds = pred_df[~(pred_df.index.isin([x[1] for x in matches]))][['m/z', 'RT', 'top1_pred']].rename(columns={'m/z': 'Mass', 'top1_pred': col_name, 'RT': rt_col})
+  extra_preds['in_ground_truth'] = False
+  extra_preds['glycan'] = None
   df_in = pd.concat([df_in, extra_preds]).sort_values(['Mass', rt_col])
   return df_in
 
 def evaluate_predictions(predictions, gt, rt_col='RT'):
   if len(predictions) == 0:
-    return 0.0, 0, 0, 0, 0, 0, 0, 0
+    return 0.0, 0, 0, 0, 0, 0, 0, 0, 0
   if 'charge' not in predictions.columns:
     predictions['charge'] = -1
   predictions['converted_masses'] = [m_z * abs(charge) + (abs(charge) - 1) for m_z, charge in zip(predictions.reset_index()['m/z'], predictions['charge'])]
@@ -74,15 +78,16 @@ def evaluate_predictions(predictions, gt, rt_col='RT'):
       else:
         similarity_scores.append(get_glycan_similarity(gt_glycan, pred_glycan))
   new_md['similarity_score'] = similarity_scores
-  tp = new_md['similarity_score'].sum()
-  fp = len(np.where((new_md['glycan'].isnull()) & (new_md['batch_pred'].notnull()))[0])
+  unevaluable = len(np.where((new_md['in_ground_truth']) & (new_md['glycan'].isnull()) & (new_md['batch_pred'].notnull()))[0])
+  fp = len(np.where((~new_md['in_ground_truth']) & (new_md['batch_pred'].notnull()))[0])
+  tp = new_md[new_md['glycan'].notnull()]['similarity_score'].sum() + 0.5 * unevaluable
   fn = (new_md[new_md['glycan'].notnull()]['similarity_score'].apply(lambda x: 1 - x)).sum()
   peaks_not_picked = len(np.where((new_md['glycan'].notnull()) & (new_md['batch_pred'].isnull()))[0])
   incorrect_predictions = len(np.where((new_md['glycan'].notnull()) & (new_md['batch_pred'].notnull()) & (new_md['similarity_score'] < 1.0))[0])
   precision = tp / (tp + fp + 1e-8)
   recall = tp / (tp + fn + 1e-8)
   f1_score = 2 * (precision * recall) / (precision + recall + 1e-8)
-  return f1_score, precision, recall, peaks_not_picked, incorrect_predictions, tp, fp, fn
+  return f1_score, precision, recall, peaks_not_picked, incorrect_predictions, tp, fp, fn, unevaluable
 
 def evaluate_submission(submission_dir, test_dir="data/public_test"):
   test_files = [f for f in os.listdir(test_dir) if f.endswith('.csv') and '_solution' in f]
@@ -99,10 +104,9 @@ def evaluate_submission(submission_dir, test_dir="data/public_test"):
     predictions = pd.read_csv(submission_path)
     gt = pd.read_csv(os.path.join(test_dir, test_file))
     rt_col = 'RT' if 'RT' in gt.columns else test_file.split('.')[0] + '_RT'
-    gt_filtered = gt[gt['glycan'].notna()]
-    f1, precision, recall, peaks_not_picked, incorrect, tp, fp, fn = evaluate_predictions(predictions, gt_filtered, rt_col)
-    results[test_file] = {'F1': f1, 'Precision': precision, 'Recall': recall, 'TP': tp, 'FP': fp, 'FN': fn}
-    print(f"{test_file}: F1={f1:.4f}, Precision={precision:.4f}, Recall={recall:.4f}, TP={tp:.1f}, FP={fp}, FN={fn:.1f}")
+    f1, precision, recall, peaks_not_picked, incorrect, tp, fp, fn, unevaluable = evaluate_predictions(predictions, gt, rt_col)
+    results[test_file] = {'F1': f1, 'Precision': precision, 'Recall': recall, 'TP': tp, 'FP': fp, 'FN': fn, 'Unevaluable': unevaluable}
+    print(f"{test_file}: F1={f1:.4f}, Precision={precision:.4f}, Recall={recall:.4f}, TP={tp:.1f}, FP={fp}, FN={fn:.1f}, Unevaluable={unevaluable}")
   avg_f1 = np.mean([r['F1'] for r in results.values()])
   print(f"\nAverage F1: {avg_f1:.4f}")
   return avg_f1, results
