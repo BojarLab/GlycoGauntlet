@@ -20,7 +20,7 @@ Your predictions are matched to ground truth spectra using mass (±0.5 Da) and r
 
 **Public Test**: Files in `data/public_test/` with ground truths as `_solution.csv` files
 
-**Private Test**: Hidden, scored only at competition end
+**Private Test**: Hidden, scored only at competition end. Files are named in the format `ID_GlycanClass_GlycanDerivatization.xlsx`
 
 ## Submission Format
 
