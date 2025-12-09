@@ -8,7 +8,7 @@ Predict glycan structures from mass spectrometry glycomics data. Beat our deep l
 
 ## Task
 
-Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: XXX). Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
+Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: XXX). All files are negative ion mode, reduced animal glycans, run on a PGC column. Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
 
 ## Evaluation
 
@@ -69,7 +69,7 @@ Final rankings on private test set will be revealed after competition closes on 
 
 ## Manual Annotation
 
-You don't need code. Annotate spectra in Excel, format as above, submit. Many of the best glycomics annotations come from expert knowledge, not algorithms.
+You don't need code. Annotate spectra in Excel, format as above, submit. Many of the best glycomics annotations come from expert knowledge, not algorithms. If you do submit manual annotations, we would me much obliged if you could note down how long each file approximately took you
 
 ## Questions
 
