@@ -4,6 +4,8 @@ import requests
 import os
 from io import StringIO
 import sys
+import base64
+from datetime import datetime
 sys.path.append('validation')
 from check_format import validate_submission
 
@@ -73,21 +75,42 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
           st.write(f"❌ {error}")
         st.stop()
       headers = {'Authorization': f'token {GITHUB_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
-      import base64
-      issue_body = f"### GitHub Username or Model Name\n{username}\n\n### Public Test Predictions\n"
-      if public_files:
-        for file in public_files:
+      branch_name = f"submission-{username.replace(' ', '-')}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+      main_response = requests.get(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/git/refs/heads/main', headers=headers)
+      if main_response.status_code != 200:
+        st.error(f"Failed to get main branch: {main_response.text}")
+        st.stop()
+      main_sha = main_response.json()['object']['sha']
+      ref_data = {'ref': f'refs/heads/{branch_name}', 'sha': main_sha}
+      ref_response = requests.post(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/git/refs', json=ref_data, headers=headers)
+      if ref_response.status_code != 201:
+        st.error(f"Failed to create branch: {ref_response.text}")
+        st.stop()
+      file_urls = {'public': [], 'private': []}
+      for test_type_key, files in [('public', public_files), ('private', private_files)]:
+        if not files:
+          continue
+        for file in files:
           file.seek(0)
           content = base64.b64encode(file.read()).decode('utf-8')
-          issue_body += f"\n**{file.name}**:\n```csv-base64\n{content}\n```\n"
+          file_path = f"submissions/{username}/{test_type_key}/{file.name}"
+          file_data = {'message': f'Add {file.name}', 'content': content, 'branch': branch_name}
+          file_response = requests.put(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{file_path}', json=file_data, headers=headers)
+          if file_response.status_code not in [201, 200]:
+            st.error(f"Failed to upload {file.name}: {file_response.text}")
+            st.stop()
+          raw_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{branch_name}/{file_path}"
+          file_urls[test_type_key].append(raw_url)
+      issue_body = f"### GitHub Username or Model Name\n{username}\n\n### Public Test Predictions\n"
+      if file_urls['public']:
+        for url in file_urls['public']:
+          issue_body += f"- {url}\n"
       else:
         issue_body += "None\n"
       issue_body += "\n### Private Test Predictions\n"
-      if private_files:
-        for file in private_files:
-          file.seek(0)
-          content = base64.b64encode(file.read()).decode('utf-8')
-          issue_body += f"\n**{file.name}**:\n```csv-base64\n{content}\n```\n"
+      if file_urls['private']:
+        for url in file_urls['private']:
+          issue_body += f"- {url}\n"
       else:
         issue_body += "None\n"
       issue_body += "\n### Confirmation\n- [x] Files validated via Streamlit\n- [x] CSV files follow required format"
