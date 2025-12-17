@@ -95,6 +95,9 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
           content = base64.b64encode(file.read()).decode('utf-8')
           file_path = f"submissions/{username}/{test_type_key}/{file.name}"
           file_data = {'message': f'Add {file.name}', 'content': content, 'branch': branch_name}
+          existing_response = requests.get(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{file_path}?ref={branch_name}', headers=headers)
+          if existing_response.status_code == 200:
+            file_data['sha'] = existing_response.json()['sha']
           file_response = requests.put(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{file_path}', json=file_data, headers=headers)
           if file_response.status_code not in [201, 200]:
             st.error(f"Failed to upload {file.name}: {file_response.text}")
