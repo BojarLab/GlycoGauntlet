@@ -39,8 +39,11 @@ jobs:
             const publicSection = issue.body.match(/### Public Test Predictions\s+([\s\S]*?)###/);
             const privateSection = issue.body.match(/### Private Test Predictions\s+([\s\S]*?)###/);
             const attachmentRegex = /https:\/\/github\.com\/.*?\/files\/\d+\/[^\s)]+\.csv/g;
-            const publicUrls = publicSection ? (publicSection[1].match(attachmentRegex) || []) : [];
-            const privateUrls = privateSection ? (privateSection[1].match(attachmentRegex) || []) : [];
+            const rawUrlRegex = /https:\/\/raw\.githubusercontent\.com\/[^\s)]+\.csv/g;
+            const publicRawUrls = publicSection ? (publicSection[1].match(rawUrlRegex) || []) : [];
+            const privateRawUrls = privateSection ? (privateSection[1].match(rawUrlRegex) || []) : [];
+            const publicUrls = publicSection ? ([...(publicSection[1].match(attachmentRegex) || []), ...publicRawUrls]) : [];
+            const privateUrls = privateSection ? ([...(privateSection[1].match(attachmentRegex) || []), ...privateRawUrls]) : [];
             const extractBase64Files = (section) => {
               if (!section) return [];
               const fileRegex = /\*\*(.+?\.csv)\*\*:\s*```csv-base64\s+([\s\S]+?)```/g;
