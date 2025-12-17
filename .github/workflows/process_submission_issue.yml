@@ -19,10 +19,10 @@ jobs:
       - name: Extract username
         id: extract
         run: |
-          USERNAME=$(echo "${{ github.event.issue.body }}" | grep -A2 "GitHub Username" | tail -1 | xargs)
+          USERNAME=$(echo "${{ github.event.issue.body }}" | sed -n '/GitHub Username or Model Name/,/^###/p' | sed '1d;$d' | xargs)
           if [ -z "$USERNAME" ]; then
-            echo "Failed to extract username, using issue creator"
-            USERNAME="${{ github.event.issue.user.login }}"
+            echo "ERROR: Could not extract username from submission"
+            exit 1
           fi
           echo "username=$USERNAME" >> $GITHUB_OUTPUT
           echo "Extracted username: $USERNAME"
@@ -192,3 +192,22 @@ jobs:
               repo: context.repo.repo,
               state: 'closed'
             });
+      - name: Delete submission branch
+        if: steps.validate.outputs.validation_failed != 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const branchMatch = issue.body.match(/https:\/\/raw\.githubusercontent\.com\/[^\/]+\/[^\/]+\/([^\/]+)\//);
+            if (branchMatch && branchMatch[1] !== 'main') {
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${branchMatch[1]}`
+                });
+                console.log(`Deleted branch: ${branchMatch[1]}`);
+              } catch (error) {
+                console.log(`Could not delete branch: ${error.message}`);
+              }
+            }
