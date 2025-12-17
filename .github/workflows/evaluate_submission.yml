@@ -4,6 +4,20 @@ on:
   pull_request:
     paths:
       - 'submissions/**'
+  workflow_dispatch:
+    inputs:
+      submission_dir:
+        description: 'Submission directory path'
+        required: true
+        type: string
+      username:
+        description: 'Username for leaderboard'
+        required: true
+        type: string
+      issue_number:
+        description: 'Issue number to comment on'
+        required: true
+        type: string
 
 jobs:
   evaluate:
@@ -28,11 +42,18 @@ jobs:
       - name: Extract submission info
         id: submission_info
         run: |
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
-          SUBMISSION_DIR=$(echo "$CHANGED_FILES" | grep "submissions/" | head -1 | cut -d'/' -f1-3 | sort -u)
-          USERNAME=$(echo "$SUBMISSION_DIR" | cut -d'/' -f2)
-          echo "submission_dir=$SUBMISSION_DIR" >> $GITHUB_OUTPUT
-          echo "username=$USERNAME" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "submission_dir=${{ github.event.inputs.submission_dir }}" >> $GITHUB_OUTPUT
+            echo "username=${{ github.event.inputs.username }}" >> $GITHUB_OUTPUT
+            echo "issue_number=${{ github.event.inputs.issue_number }}" >> $GITHUB_OUTPUT
+          else
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+            SUBMISSION_DIR=$(echo "$CHANGED_FILES" | grep "submissions/" | head -1 | cut -d'/' -f1-3 | sort -u)
+            USERNAME=$(echo "$SUBMISSION_DIR" | cut -d'/' -f2)
+            echo "submission_dir=$SUBMISSION_DIR" >> $GITHUB_OUTPUT
+            echo "username=$USERNAME" >> $GITHUB_OUTPUT
+            echo "issue_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          fi
       
       - name: Validate submission format
         run: |
@@ -68,7 +89,7 @@ jobs:
             const fs = require('fs');
             const result = fs.readFileSync('eval_result.txt', 'utf8');
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ steps.submission_info.outputs.issue_number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `## Evaluation Results\n\n\`\`\`\n${result}\n\`\`\`\n\nYour submission has been evaluated! Check the updated leaderboard at [leaderboard/public.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/leaderboard/public.md)`

@@ -41,8 +41,20 @@ jobs:
             const attachmentRegex = /https:\/\/github\.com\/.*?\/files\/\d+\/[^\s)]+\.csv/g;
             const publicUrls = publicSection ? (publicSection[1].match(attachmentRegex) || []) : [];
             const privateUrls = privateSection ? (privateSection[1].match(attachmentRegex) || []) : [];
-            if (publicUrls.length === 0 && privateUrls.length === 0) {
-              core.setFailed('No CSV attachments found');
+            const extractBase64Files = (section) => {
+              if (!section) return [];
+              const fileRegex = /\*\*(.+?\.csv)\*\*:\s*```csv-base64\s+([\s\S]+?)```/g;
+              const files = [];
+              let match;
+              while ((match = fileRegex.exec(section)) !== null) {
+                files.push({name: match[1], content: match[2].trim()});
+              }
+              return files;
+            };
+            const publicBase64 = publicSection ? extractBase64Files(publicSection[1]) : [];
+            const privateBase64 = privateSection ? extractBase64Files(privateSection[1]) : [];
+            if (publicUrls.length === 0 && privateUrls.length === 0 && publicBase64.length === 0 && privateBase64.length === 0) {
+              core.setFailed('No CSV attachments or base64 files found');
               return;
             }
             const downloadFile = async (url, dir) => {
@@ -71,9 +83,17 @@ jobs:
             for (const url of privateUrls) {
               await downloadFile(url, 'temp_submissions/private');
             }
-            core.setOutput('has_public', publicUrls.length > 0);
-            core.setOutput('has_private', privateUrls.length > 0);
-            return publicUrls.length + privateUrls.length;
+            for (const file of publicBase64) {
+              const decoded = Buffer.from(file.content, 'base64').toString('utf-8');
+              fs.writeFileSync(path.join('temp_submissions/public', file.name), decoded);
+            }
+            for (const file of privateBase64) {
+              const decoded = Buffer.from(file.content, 'base64').toString('utf-8');
+              fs.writeFileSync(path.join('temp_submissions/private', file.name), decoded);
+            }
+            core.setOutput('has_public', publicUrls.length > 0 || publicBase64.length > 0);
+            core.setOutput('has_private', privateUrls.length > 0 || privateBase64.length > 0);
+            return publicUrls.length + privateUrls.length + publicBase64.length + privateBase64.length;
       
       - name: Create submission structure
         run: |

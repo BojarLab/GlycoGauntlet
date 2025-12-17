@@ -51,8 +51,6 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
     try:
       validation_errors = []
       if public_files:
-        temp_dir = "temp_validation"
-        os.makedirs(temp_dir, exist_ok=True)
         for file in public_files:
           df = pd.read_csv(file)
           required_cols = ['m/z', 'RT', 'charge', 'top1_pred']
@@ -74,48 +72,34 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
         for error in validation_errors:
           st.write(f"❌ {error}")
         st.stop()
-      issue_body = f"### GitHub Username or Model Name\n{username}\n\n"
-      issue_body += "### Public Test Predictions\n"
+      headers = {'Authorization': f'token {GITHUB_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
+      import base64
+      issue_body = f"### GitHub Username or Model Name\n{username}\n\n### Public Test Predictions\n"
       if public_files:
         for file in public_files:
           file.seek(0)
-          issue_body += f"Attached: {file.name}\n"
+          content = base64.b64encode(file.read()).decode('utf-8')
+          issue_body += f"\n**{file.name}**:\n```csv-base64\n{content}\n```\n"
       else:
         issue_body += "None\n"
       issue_body += "\n### Private Test Predictions\n"
       if private_files:
         for file in private_files:
           file.seek(0)
-          issue_body += f"Attached: {file.name}\n"
+          content = base64.b64encode(file.read()).decode('utf-8')
+          issue_body += f"\n**{file.name}**:\n```csv-base64\n{content}\n```\n"
       else:
         issue_body += "None\n"
-      issue_body += "\n### Confirmation\n- [x] I have validated my files\n- [x] My CSV files follow the required format"
-      headers = {'Authorization': f'token {GITHUB_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
-      issue_data = {'title': f'[Submission] {username}', 'body': issue_body, 'labels': ['submission']}
+      issue_body += "\n### Confirmation\n- [x] Files validated via Streamlit\n- [x] CSV files follow required format"
+      issue_data = {'title': f'[Submission] {username}', 'body': issue_body, 'labels': ['submission', 'streamlit']}
       response = requests.post(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues', json=issue_data, headers=headers)
       if response.status_code != 201:
-        st.error(f"Failed to create submission issue: {response.text}")
+        st.error(f"Failed to create submission: {response.text}")
         st.stop()
       issue_number = response.json()['number']
-      all_files = []
-      if public_files:
-        all_files.extend([(f, "public") for f in public_files])
-      if private_files:
-        all_files.extend([(f, "private") for f in private_files])
-      for file, test_type_label in all_files:
-        file.seek(0)
-        file_content = file.read()
-        upload_response = requests.post(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_number}/comments', json={'body': f'Uploading {test_type_label} test file: {file.name}'}, headers=headers)
-        asset_url = f'https://uploads.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{issue_number}/assets?name={file.name}'
-        asset_headers = headers.copy()
-        asset_headers['Content-Type'] = 'text/csv'
-        asset_response = requests.post(asset_url, data=file_content, headers=asset_headers)
       st.success(f"✅ Submission successful! Issue #{issue_number} created.")
       st.markdown(f"Track your submission at: https://github.com/{REPO_OWNER}/{REPO_NAME}/issues/{issue_number}")
-      if public_files:
-        st.info("Your public test predictions will be evaluated automatically within a few minutes. Check the leaderboard!")
-      if private_files:
-        st.info("Your private test predictions have been received and will be evaluated after the competition ends.")
+      st.info("Your files will be processed by our automated workflow within a few minutes.")
     except Exception as e:
       st.error(f"Error during submission: {str(e)}")
 
