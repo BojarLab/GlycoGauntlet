@@ -49,10 +49,11 @@ m/z: 1235.19, charge: -1, RT: 17.63, top1_pred: Man(a1-3)[Man(a1-6)]Man(a1-6)[Ma
 5. Submit the issue
 
 A bot will automatically create a PR, run evaluation, and update the leaderboard. Check the issue for status updates.
+Alternatively, you can submit your annotations on our [web portal](https://glycogauntlet.streamlit.app/)
 
 ## Baseline
 
-CandyCrunch (our model) achieves F1=0.XX on public test. Code: https://github.com/BojarLab/CandyCrunch
+CandyCrunch (our model) achieves F1=0.71 on the public test. Code: https://github.com/BojarLab/CandyCrunch
 
 To generate baseline predictions:
 ```python
@@ -70,6 +71,7 @@ Final rankings on private test set will be revealed after competition closes on 
 ## Manual Annotation
 
 You don't need code. Annotate spectra in Excel, format as above, submit. Many of the best glycomics annotations come from expert knowledge, not algorithms. If you do submit manual annotations, we would me much obliged if you could note down how long each file approximately took you
+Submit your solutions [here](https://glycogauntlet.streamlit.app/)
 
 ## Questions
 
