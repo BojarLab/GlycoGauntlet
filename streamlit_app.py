@@ -125,7 +125,7 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
       issue_number = response.json()['number']
       st.success(f"✅ Submission successful! Issue #{issue_number} created.")
       st.markdown(f"Track your submission at: https://github.com/{REPO_OWNER}/{REPO_NAME}/issues/{issue_number}")
-      st.info("Your files will be processed by our automated workflow within a few minutes.")
+      st.info("Your submission is being processed. Check the issue for results; validation and evaluation typically complete within a few minutes.")
     except Exception as e:
       st.error(f"Error during submission: {str(e)}")
 

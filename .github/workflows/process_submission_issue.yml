@@ -122,18 +122,22 @@ jobs:
         id: validate
         run: |
           if [ "${{ steps.download.outputs.has_public }}" == "true" ]; then
-            python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public || echo "validation_failed=true" >> $GITHUB_OUTPUT
+            python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public 2>&1 | tee validation_output.txt || echo "validation_failed=true" >> $GITHUB_OUTPUT
           fi
       
       - name: Evaluate submission
         if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true'
         id: evaluate
+        continue-on-error: true
         run: |
           pip install pandas numpy scipy openpyxl glycowork
-          RESULT=$(python evaluation/evaluate_submission.py submissions/${{ steps.extract.outputs.username }}/public)
+          RESULT=$(python evaluation/evaluate_submission.py submissions/${{ steps.extract.outputs.username }}/public 2>&1) || echo "EVALUATION_FAILED"
           SCORE=$(echo "$RESULT" | grep "Average F1:" | awk '{print $3}')
           echo "score=$SCORE" >> $GITHUB_OUTPUT
           echo "$RESULT" > eval_result.txt
+          if [ -z "$SCORE" ]; then
+            echo "evaluation_failed=true" >> $GITHUB_OUTPUT
+          fi
       
       - name: Update leaderboard
         if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true'
@@ -157,11 +161,21 @@ jobs:
         with:
           script: |
             const validation_failed = '${{ steps.validate.outputs.validation_failed }}' === 'true';
+            const evaluation_failed = '${{ steps.evaluate.outputs.evaluation_failed }}' === 'true';
             const has_public = '${{ steps.download.outputs.has_public }}' === 'true';
             const has_private = '${{ steps.download.outputs.has_private }}' === 'true';
             let body;
             if (validation_failed) {
-              body = '❌ Validation failed. Please check your file format and try again.';
+              const fs = require('fs');
+              let validationDetails = '';
+              try {
+                validationDetails = fs.readFileSync('validation_output.txt', 'utf8');
+              } catch (e) {}
+              body = `❌ Validation failed. Please check your file format and try again.\n\n\`\`\`\n${validationDetails}\n\`\`\``;
+            } else if (evaluation_failed) {
+              const fs = require('fs');
+              const errorLog = fs.readFileSync('eval_result.txt', 'utf8');
+              body = `❌ Evaluation failed. Your files passed validation but encountered an error during scoring:\n\n\`\`\`\n${errorLog}\n\`\`\`\n\nPlease check your glycan structure format and try again.`;
             } else {
               let parts = [];
               if (has_public) {
@@ -182,7 +196,7 @@ jobs:
             });
             
       - name: Close issue
-        if: steps.validate.outputs.validation_failed != 'true'
+        if: steps.validate.outputs.validation_failed != 'true' && steps.evaluate.outputs.evaluation_failed != 'true'
         uses: actions/github-script@v6
         with:
           script: |
@@ -207,6 +221,25 @@ jobs:
                   ref: `heads/${branchMatch[1]}`
                 });
                 console.log(`Deleted branch: ${branchMatch[1]}`);
+              } catch (error) {
+                console.log(`Could not delete branch: ${error.message}`);
+              }
+            }
+      - name: Delete submission branch on failure
+        if: always() && steps.validate.outputs.validation_failed == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const branchMatch = issue.body.match(/https:\/\/raw\.githubusercontent\.com\/[^\/]+\/[^\/]+\/([^\/]+)\//);
+            if (branchMatch && branchMatch[1] !== 'main') {
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${branchMatch[1]}`
+                });
+                console.log(`Deleted failed branch: ${branchMatch[1]}`);
               } catch (error) {
                 console.log(`Could not delete branch: ${error.message}`);
               }

@@ -100,7 +100,7 @@ def evaluate_submission(submission_dir, test_dir="data/public_test"):
     submission_file = test_file.replace('_solution.csv', '_submission.csv')
     submission_path = os.path.join(submission_dir, submission_file)
     if not os.path.exists(submission_path):
-      print(f"Warning: Missing submission file {test_file}")
+      print(f"Warning: Missing submission file {submission_file}")
       continue
     predictions = pd.read_csv(submission_path)
     gt = pd.read_csv(os.path.join(test_dir, test_file))
@@ -109,7 +109,9 @@ def evaluate_submission(submission_dir, test_dir="data/public_test"):
     results[test_file] = {'F1': f1, 'Precision': precision, 'Recall': recall, 'TP': tp, 'FP': fp, 'FN': fn, 'Unevaluable': unevaluable}
     print(f"{test_file}: F1={f1:.4f}, Precision={precision:.4f}, Recall={recall:.4f}, TP={tp:.1f}, FP={fp}, FN={fn:.1f}, Unevaluable={unevaluable}")
   avg_f1 = np.mean([r['F1'] for r in results.values()])
-  print(f"\nAverage F1: {avg_f1:.4f}")
+  print(f"\n{'=' * 60}")
+  print(f"OVERALL F1 SCORE: {avg_f1:.4f}")
+  print(f"{'=' * 60}")
   return avg_f1, results
 
 if __name__ == "__main__":

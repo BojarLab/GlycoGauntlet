@@ -26,10 +26,13 @@ def update_leaderboard(username, score, test_set='public'):
   with open(md_file, 'w') as f:
     f.write(f"# Public Test Leaderboard\n\n")
     f.write(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n\n")
-    f.write("| Rank | Username | Best F1 Score | Submissions |\n")
-    f.write("|------|----------|---------------|-------------|\n")
+    f.write(f"Total participants: {len(scores)} | Total submissions: {sum(len(data['submissions']) for data in scores.values())}\n\n")
+    f.write("| Rank | Username | Best F1 Score | Submissions | Last Submission |\n")
+    f.write("|------|----------|---------------|-------------|------------------|\n")
     for rank, (user, data) in enumerate(sorted_scores, 1):
-      f.write(f"| {rank} | {user} | {data['best_score']:.4f} | {len(data['submissions'])} |\n")
+      last_sub = max(data['submissions'], key=lambda x: x['timestamp'])['timestamp']
+      last_sub_date = datetime.fromisoformat(last_sub).strftime('%Y-%m-%d')
+      f.write(f"| {rank} | {user} | {data['best_score']:.4f} | {len(data['submissions'])} | {last_sub_date} |\n")
 
 if __name__ == "__main__":
   if len(sys.argv) != 4:

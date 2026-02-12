@@ -7,13 +7,12 @@ def validate_submission(submission_dir, test_dir="data/public_test"):
   test_files = [f.replace("_solution", "_submission") for f in os.listdir(test_dir) if f.endswith('.csv')]
   submission_files = [f for f in os.listdir(submission_dir) if f.endswith('.csv')]
   errors = []
-  if set(test_files) != set(submission_files):
-    missing = set(test_files) - set(submission_files)
-    extra = set(submission_files) - set(test_files)
-    if missing:
-      errors.append(f"Missing predictions for: {missing}")
-    if extra:
-      errors.append(f"Extra files not in test set: {extra}")
+  extra = set(submission_files) - set(test_files)
+  if extra:
+    errors.append(f"Extra files not in test set: {extra}")
+  missing = set(test_files) - set(submission_files)
+  if missing:
+    print(f"⚠️ Warning: Partial submission - missing predictions for: {missing}")
   for filename in submission_files:
     filepath = os.path.join(submission_dir, filename)
     try:
