@@ -8,19 +8,23 @@ Predict glycan structures from mass spectrometry glycomics data. Beat our deep l
 
 ## Task
 
-Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: XXX). All files are negative ion mode, reduced animal glycans, run on a PGC column. Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
+Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: https://zenodo.org/records/19221873). All files are negative ion mode, reduced animal glycans, run on a PGC column. Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
+
+If you provide submissions for public+private files, you will be invited to be a co-author on the GlycoGauntlet paper.
 
 ## Evaluation
 
 Your predictions are matched to ground truth spectra using mass (±0.5 Da) and retention time (±1.0 min) tolerance. Scoring uses a soft F1 metric where exact structural matches get 1.0 and partial matches get cosine similarity based on motif fingerprints. False positives and false negatives are penalized. See `evaluation/evaluate_submission.py` for the exact implementation.
 
+Public file submissions are immediately scored and scores will be displayed on a public leaderboard. Private file submissions will also be scored but scores will be hidden until the end of the competition. You can submit as many attempts as you want
+
 ## Data
 
 **Training**: Full annotated dataset at https://zenodo.org/records/10997110 (multiple glycomics runs, hundreds of thousands of annotated spectra)
 
-**Public Test**: Files in `data/public_test/` with ground truths as `_solution.csv` files
+**Public Test**: Files in `data/public_test/` with ground truths as `_solution.csv` files. Files in `.mzML` format can be found here at https://zenodo.org/records/19221873
 
-**Private Test**: Hidden, scored only at competition end. Files are named in the format `ID_GlycanClass_GlycanDerivatization.xlsx`
+**Private Test**: Hidden, scored only at competition end. Files are named in the format `ID_GlycanClass_GlycanDerivatization.xlsx`.  Files in `.mzML` format can be found here at https://zenodo.org/records/19221873
 
 ## Submission Format
 
@@ -53,7 +57,7 @@ Alternatively, you can submit your annotations on our [web portal](https://glyco
 
 ## Baseline
 
-CandyCrunch (our model) achieves F1=0.71 on the public test. Code: https://github.com/BojarLab/CandyCrunch
+CandyCrunch2 (our model) achieves F1=0.74 on the public test. Code: https://github.com/BojarLab/CandyCrunch
 
 To generate baseline predictions:
 ```python
@@ -66,11 +70,12 @@ preds.to_csv("submissions/baseline/public/example_submission.csv")
 
 See [leaderboard/public.md](leaderboard/public.md) for current rankings on public test set.
 
-Final rankings on private test set will be revealed after competition closes on [DATE].
+Final rankings on private test set will be revealed after competition closes on October 2026 (tentative).
 
 ## Manual Annotation
 
 You don't need code. Annotate spectra in Excel, format as above, submit. Many of the best glycomics annotations come from expert knowledge, not algorithms. If you do submit manual annotations, we would me much obliged if you could note down how long each file approximately took you
+
 Submit your solutions [here](https://glycogauntlet.streamlit.app/)
 
 ## Questions
