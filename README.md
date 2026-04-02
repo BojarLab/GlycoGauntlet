@@ -8,9 +8,9 @@ Predict glycan structures from mass spectrometry glycomics data. Beat our deep l
 
 ## Task
 
-Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: https://zenodo.org/records/19221873). All files are negative ion mode, reduced animal glycans, run on a PGC column. Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in (preferably) IUPAC-condensed notation, as well as where they're found (m/z + retention time).
+Given Excel files containing LC-MS/MS glycomics runs (thousands of spectra per file), predict the glycan structure for each detected peak (Alternatively, raw files are available here: https://zenodo.org/records/19221873). All files are negative ion mode, reduced animal glycans, run on a PGC column. All files come from separate samples (not replicates). Input files contain m/z, retention time, fragmentation peak dictionaries, and intensity data. Your job is to output glycan structures in any common notation (e.g., IUPAC-condensed, GlyTouCan IDs, etc), as well as where they're found (m/z + retention time).
 
-If you provide submissions for public+private files, you will be invited to be a co-author on the GlycoGauntlet paper.
+If you provide submissions for private files (one submission per file), you will be invited to be a co-author on the GlycoGauntlet paper (public file submissions optional but encouraged for an even better paper/comparison:-) ).
 
 ## Evaluation
 
