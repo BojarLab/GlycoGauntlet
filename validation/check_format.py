@@ -2,6 +2,43 @@ import pandas as pd
 import sys
 import os
 from pathlib import Path
+import xml.etree.ElementTree as ET
+from glycowork.motif.processing import canonicalize_iupac
+from glycowork.motif.tokenization import glycan_to_mass
+
+def parse_gwp(file_obj):
+  tree = ET.parse(file_obj)
+  rows = []
+  for scan in tree.getroot().iter('Scan'):
+    name = scan.get('name', '')
+    if '@' not in name:
+      continue
+    mz_str, rt_str = name.split('@', 1)
+    try:
+      mz, rt = float(mz_str), float(rt_str)
+    except ValueError:
+      continue
+    for glycan in scan.iter('Glycan'):
+      raw = glycan.get('structure', '')
+      if not raw:
+        continue
+      try:
+        iupac = canonicalize_iupac(raw)
+      except Exception:
+        iupac = raw
+      charge = -1
+      try:
+        neutral = glycan_to_mass(iupac) + 1.00728
+        best, best_diff = -1, float('inf')
+        for n in [1, 2, 3]:
+          diff = abs(mz * n + n * 1.00728 - neutral)
+          if diff < best_diff:
+            best_diff, best = diff, n
+        charge = -best
+      except Exception:
+        pass
+      rows.append({'m/z': mz, 'RT': rt, 'charge': charge, 'top1_pred': iupac})
+  return pd.DataFrame(rows)
 
 def validate_submission(submission_dir, test_dir="data/public_test"):
   test_files = [f.replace("_solution", "_submission") for f in os.listdir(test_dir) if f.endswith('.csv')]

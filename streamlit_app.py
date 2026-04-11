@@ -7,7 +7,7 @@ import sys
 import base64
 from datetime import datetime
 sys.path.append('validation')
-from check_format import validate_submission
+from check_format import validate_submission, parse_gwp
 
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 REPO_OWNER = os.environ.get('REPO_OWNER', 'BojarLab')
@@ -37,11 +37,11 @@ private_files = None
 
 if test_type in ["Public Test (immediate evaluation)", "Both"]:
   st.subheader("📊 Public Test Predictions")
-  public_files = st.file_uploader("Upload your public test CSV files", type=['csv'], accept_multiple_files=True, key="public")
+  public_files = st.file_uploader("Upload your public test CSV or GlycoWorkbench files", type=['csv', 'gwp'], accept_multiple_files=True, key="public")
 
 if test_type in ["Private Test (final evaluation only)", "Both"]:
   st.subheader("🔒 Private Test Predictions")
-  private_files = st.file_uploader("Upload your private test CSV files", type=['csv'], accept_multiple_files=True, key="private")
+  private_files = st.file_uploader("Upload your private test CSV or GlycoWorkbench files", type=['csv', 'gwp'], accept_multiple_files=True, key="private")
 
 agree = st.checkbox("I confirm my files follow the required format")
 
@@ -52,9 +52,15 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
   with st.spinner("Validating and submitting your predictions..."):
     try:
       validation_errors = []
+      converted_public = {}
       if public_files:
         for file in public_files:
-          df = pd.read_csv(file)
+          if file.name.endswith('.gwp'):
+            df = parse_gwp(file)
+            converted_public[file.name] = df
+            file._name = file.name.replace('.gwp', '_submission.csv')
+          else:
+            df = pd.read_csv(file)
           required_cols = ['m/z', 'RT', 'charge', 'top1_pred']
           missing_cols = [col for col in required_cols if col not in df.columns]
           if missing_cols:
@@ -91,8 +97,12 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
         if not files:
           continue
         for file in files:
-          file.seek(0)
-          content = base64.b64encode(file.read()).decode('utf-8')
+          if file.name in converted_public:
+            csv_bytes = converted_public[file.name].to_csv(index = True).encode()
+            content = base64.b64encode(csv_bytes).decode('utf-8')
+          else:
+            file.seek(0)
+            content = base64.b64encode(file.read()).decode('utf-8')
           file_path = f"submissions/{username}/{test_type_key}/{file.name}"
           file_data = {'message': f'Add {file.name}', 'content': content, 'branch': branch_name}
           existing_response = requests.get(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{file_path}?ref={branch_name}', headers=headers)
