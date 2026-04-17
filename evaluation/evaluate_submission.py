@@ -46,10 +46,10 @@ def add_pred_column(df_in, col_name, matches, pred_df, rt_col):
   df_in['in_ground_truth'] = True
   for gt_idx, pred_idx in matches:
     df_in.at[gt_idx, col_name] = pred_df.iloc[pred_idx, :]['top1_pred']
-  extra_preds = pred_df[~(pred_df.index.isin([x[1] for x in matches]))][['m/z', 'RT', 'top1_pred']].rename(columns={'m/z': 'Mass', 'top1_pred': col_name, 'RT': rt_col})
+  extra_preds = pred_df[~(pred_df.index.isin([x[1] for x in matches]))][['m/z', 'RT', 'top1_pred']]
   extra_preds['in_ground_truth'] = False
-  extra_preds['glycan'] = None
-  df_in = pd.concat([df_in, extra_preds]).sort_values(['Mass', rt_col])
+  extra_preds['top1_pred'] = None
+  df_in = pd.concat([df_in, extra_preds]).sort_values(['m/z', rt_col])
   return df_in
 
 def evaluate_predictions(predictions, gt, rt_col='RT'):
@@ -60,12 +60,12 @@ def evaluate_predictions(predictions, gt, rt_col='RT'):
   predictions['converted_masses'] = [m_z * abs(charge) + (abs(charge) - 1) for m_z, charge in zip(predictions.reset_index()['m/z'], predictions['charge'])]
   pairs = predictions.reset_index()[['m/z', 'RT']].round(2).values
   pairs_converted = predictions[['converted_masses', 'RT']].round(2).values
-  gt_pairs = gt.reset_index()[['Mass', rt_col]].round(2).values
+  gt_pairs = gt.reset_index()[['m/z', rt_col]].round(2).values
   matched_pairs = match_spectra(gt_pairs, pairs, mass_threshold=MASS_TOLERANCE, rt_threshold=RT_TOLERANCE, array2_alt=pairs_converted)
-  merge_df = gt[['Mass', rt_col, 'glycan']].reset_index(drop=True)
+  merge_df = gt[['m/z', rt_col, 'top1_pred']].reset_index(drop=True)
   new_md = add_pred_column(merge_df, 'batch_pred', matched_pairs, predictions.reset_index(), rt_col)
   similarity_scores = []
-  for gt_glycan, pred_glycan in zip(new_md['glycan'], new_md['batch_pred']):
+  for gt_glycan, pred_glycan in zip(new_md['top1_pred'], new_md['batch_pred']):
     if not (isinstance(gt_glycan, str) and isinstance(pred_glycan, str)):
       similarity_scores.append(0.0)
       continue
@@ -78,14 +78,14 @@ def evaluate_predictions(predictions, gt, rt_col='RT'):
       else:
         similarity_scores.append(get_glycan_similarity(gt_glycan, pred_glycan))
   new_md['similarity_score'] = similarity_scores
-  unevaluable = len(np.where((new_md['in_ground_truth'])&(new_md['glycan'].isnull())&(new_md['batch_pred'].notnull()))[0])
+  unevaluable = len(np.where((new_md['in_ground_truth'])&(new_md['top1_pred'].isnull())&(new_md['batch_pred'].notnull()))[0])
   fp = len(np.where((~new_md['in_ground_truth'])&(new_md['batch_pred'].notnull()))[0])
-  tp = new_md[new_md['glycan'].notnull()]['similarity_score'].sum() + 0.5 * unevaluable
-  empty_glycan_not_predicted = len(np.where((new_md['in_ground_truth'])&(new_md['glycan'].isnull())&(new_md['batch_pred'].isnull()))[0])
+  tp = new_md[new_md['top1_pred'].notnull()]['similarity_score'].sum() + 0.5 * unevaluable
+  empty_glycan_not_predicted = len(np.where((new_md['in_ground_truth'])&(new_md['top1_pred'].isnull())&(new_md['batch_pred'].isnull()))[0])
   unevaluable += empty_glycan_not_predicted
-  fn = (new_md[new_md['glycan'].notnull()]['similarity_score'].apply(lambda x: 1-x)).sum()
+  fn = (new_md[new_md['top1_pred'].notnull()]['similarity_score'].apply(lambda x: 1-x)).sum()
   peaks_not_picked = len(np.where((new_md['in_ground_truth'])&(new_md['batch_pred'].isnull()))[0])
-  incorrect_predictions = len(np.where((new_md['glycan'].notnull()) & (new_md['batch_pred'].notnull()) & (new_md['similarity_score'] < 1.0))[0])
+  incorrect_predictions = len(np.where((new_md['top1_pred'].notnull()) & (new_md['batch_pred'].notnull()) & (new_md['similarity_score'] < 1.0))[0])
   precision = tp / (tp + fp + 1e-8)
   recall = tp / (tp + fn + 1e-8)
   f1_score = 2 * (precision * recall) / (precision + recall + 1e-8)
