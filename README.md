@@ -68,7 +68,7 @@ preds.to_csv("submissions/baseline/public/example_submission.csv")
 
 ## Leaderboard
 
-See [leaderboard/public.md](leaderboard/public.md) for current rankings on public test set.
+See [leaderboard/public.md](leaderboard/public.md) for current rankings on public test set. Note that people may simply submit the solutions to the public test set, so consider perfect-ish solutions with caution:-)
 
 Final rankings on private test set will be revealed after competition closes on October 2026 (tentative).
 
