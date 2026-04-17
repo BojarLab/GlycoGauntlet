@@ -6,6 +6,11 @@ on:
       - 'submissions/**'
   workflow_dispatch:
     inputs:
+      branch_ref:
+        description: 'Branch containing submission files (leave empty for main)'
+        required: false
+        type: string
+        default: 'main'
       submission_dir:
         description: 'Submission directory path'
         required: true
@@ -26,7 +31,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch_ref || github.head_ref }}
           fetch-depth: 0
       
       - name: Set up Python
