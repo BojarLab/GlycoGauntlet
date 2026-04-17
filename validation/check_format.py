@@ -53,12 +53,12 @@ def validate_submission(submission_dir, test_dir="data/public_test"):
   for filename in submission_files:
     filepath = os.path.join(submission_dir, filename)
     try:
-      df = pd.read_csv(filepath)
+      df = pd.read_csv(filepath, encoding='utf-8-sig')
     except Exception as e:
       errors.append(f"{filename}: Cannot read Excel file - {e}")
       continue
     required_cols = ['m/z', 'RT', 'charge', 'top1_pred']
-    missing_cols = [col for col in required_cols if col not in df.columns]
+    missing_cols = [col for col in required_cols if col not in df.columns.tolist()]
     if missing_cols:
       errors.append(f"{filename}: Missing required columns: {missing_cols}")
       continue
