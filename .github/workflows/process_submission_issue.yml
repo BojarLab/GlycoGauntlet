@@ -122,7 +122,9 @@ jobs:
         id: validate
         run: |
           if [ "${{ steps.download.outputs.has_public }}" == "true" ]; then
-            python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public 2>&1 | tee validation_output.txt || echo "validation_failed=true" >> $GITHUB_OUTPUT
+            if ! python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/public > validation_output.txt 2>&1; then
+              echo "validation_failed=true" >> $GITHUB_OUTPUT
+            fi
           fi
       
       - name: Evaluate submission
@@ -132,7 +134,7 @@ jobs:
         run: |
           pip install pandas numpy scipy openpyxl glycowork
           RESULT=$(python evaluation/evaluate_submission.py submissions/${{ steps.extract.outputs.username }}/public 2>&1) || echo "EVALUATION_FAILED"
-          SCORE=$(echo "$RESULT" | grep "Average F1:" | awk '{print $3}')
+          SCORE=$(echo "$RESULT" | grep "OVERALL F1 SCORE:" | awk '{print $4}')
           echo "score=$SCORE" >> $GITHUB_OUTPUT
           echo "$RESULT" > eval_result.txt
           if [ -z "$SCORE" ]; then

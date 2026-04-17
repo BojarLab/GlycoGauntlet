@@ -108,6 +108,9 @@ def evaluate_submission(submission_dir, test_dir="data/public_test"):
     f1, precision, recall, peaks_not_picked, incorrect, tp, fp, fn, unevaluable = evaluate_predictions(predictions, gt, rt_col)
     results[test_file] = {'F1': f1, 'Precision': precision, 'Recall': recall, 'TP': tp, 'FP': fp, 'FN': fn, 'Unevaluable': unevaluable}
     print(f"{test_file}: F1={f1:.4f}, Precision={precision:.4f}, Recall={recall:.4f}, TP={tp:.1f}, FP={fp}, FN={fn:.1f}, Unevaluable={unevaluable}")
+  if not results:
+    print("No matching test files found")
+    sys.exit(1)
   avg_f1 = np.mean([r['F1'] for r in results.values()])
   print(f"\n{'=' * 60}")
   print(f"OVERALL F1 SCORE: {avg_f1:.4f}")

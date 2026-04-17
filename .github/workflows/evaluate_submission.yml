@@ -63,7 +63,7 @@ jobs:
         id: evaluate
         run: |
           RESULT=$(python evaluation/evaluate_submission.py ${{ steps.submission_info.outputs.submission_dir }})
-          SCORE=$(echo "$RESULT" | grep "Average F1:" | awk '{print $3}')
+          SCORE=$(echo "$RESULT" | grep "OVERALL F1 SCORE:" | awk '{print $4}')
           echo "score=$SCORE" >> $GITHUB_OUTPUT
           echo "$RESULT" > eval_result.txt
       

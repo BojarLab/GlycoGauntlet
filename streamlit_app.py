@@ -57,8 +57,9 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
         for file in public_files:
           if file.name.endswith('.gwp'):
             df = parse_gwp(file)
-            converted_public[file.name] = df
-            file._name = file.name.replace('.gwp', '_submission.csv')
+            new_name = file.name.replace('.gwp', '_submission.csv')
+            converted_public[new_name] = df
+            file._name = new_name
           else:
             df = pd.read_csv(file)
           required_cols = ['m/z', 'RT', 'charge', 'top1_pred']
