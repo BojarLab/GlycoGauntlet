@@ -116,7 +116,7 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install pandas openpyxl
+          pip install pandas openpyxl glycowork
       
       - name: Validate format
         id: validate
