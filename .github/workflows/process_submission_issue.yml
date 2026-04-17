@@ -140,7 +140,7 @@ jobs:
           fi
       
       - name: Update leaderboard
-        if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true'
+        if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true' && steps.evaluate.outputs.evaluation_failed != 'true'
         run: |
           python leaderboard/update_leaderboard.py \
             "${{ steps.extract.outputs.username }}" \
