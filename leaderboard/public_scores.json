@@ -9,7 +9,7 @@
     ]
   },
   "CandyCrunch": {
-    "best_score": 0.7403,
+    "best_score": 0.7577,
     "submissions": [
       {
         "score": 0.5431,
@@ -18,6 +18,10 @@
       {
         "score": 0.7403,
         "timestamp": "2025-11-28T12:23:36.731443"
+      },
+      {
+        "score": 0.7577,
+        "timestamp": "2026-04-17T11:36:51.366502"
       }
     ]
   },
