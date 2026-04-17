@@ -1,6 +1,6 @@
 ﻿m/z,RT,charge,top1_pred
 384.1,6.75,-1,Gal(b1-3)GalNAc
-519.67,15.78,-1,Neu5Ac(a2-3)Gal(b1-3)[Gal(b1-4)GlcNAc(b1-6)]GalNAc
+519.67,15.78,-2,Neu5Ac(a2-3)Gal(b1-3)[Gal(b1-4)GlcNAc(b1-6)]GalNAc
 530.1,12.56,-1,Gal(b1-4)GlcNAc(b1-3)Fuc
 530.1,19.91,-1,Fuc(a1-2)Gal(b1-3)GalNAc
 587.1,9.42,-1,Gal(b1-3)[GlcNAc(b1-6)]GalNAc
@@ -12,7 +12,7 @@
 749.2,11.46,-1,Gal(b1-4)GlcNAc(b1-6)[Gal(b1-3)]GalNAc
 790.2,11.12,-1,GlcNAc(a1-4)Gal(b1-3)[GlcNAc(b1-6)]GalNAc
 813.1,23.31,-1,Fuc(a1-2)Gal(b1-3)[GlcNAc6S(b1-6)]GalNAc
-848.5,15.01,-1,Fuc(a1-3)[Gal(b1-4)]GlcNAc(b1-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-6)[Neu5Ac(a2-3)Gal(b1-3)]GalNAc
+848.5,15.01,-2,Fuc(a1-3)[Gal(b1-4)]GlcNAc(b1-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-6)[Neu5Ac(a2-3)Gal(b1-3)]GalNAc
 878.2,13.51,-1,Neu5Ac(a2-3)Gal(b1-3)[GlcNAc(b1-6)]GalNAc
 895.2,10.44,-1,Fuc(a1-3)[Gal(b1-4)]GlcNAc(b1-6)[Gal(b1-3)]GalNAc
 895.2,20.69,-1,Fuc(a1-2)Gal(b1-3)[Gal(b1-4)GlcNAc(b1-6)]GalNAc
