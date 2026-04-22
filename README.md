@@ -57,7 +57,7 @@ Alternatively, you can submit your annotations on our [web portal](https://glyco
 
 ## Baseline
 
-CandyCrunch2 (our model) achieves F1=0.74 on the public test. Code: https://github.com/BojarLab/CandyCrunch
+CandyCrunch2 (our model) achieves F1=0.75 on the public test. Code: https://github.com/BojarLab/CandyCrunch
 
 To generate baseline predictions:
 ```python
