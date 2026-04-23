@@ -37,5 +37,14 @@
         "timestamp": "2026-04-17T11:56:56.246708"
       }
     ]
+  },
+  "Protea_Check": {
+    "best_score": 0.9973,
+    "submissions": [
+      {
+        "score": 0.9973,
+        "timestamp": "2026-04-23T06:03:46.562621"
+      }
+    ]
   }
 }
