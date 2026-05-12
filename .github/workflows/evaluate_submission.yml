@@ -34,6 +34,10 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch_ref || github.head_ref }}
           fetch-depth: 0
       
+      - name: Get latest evaluation code
+        run: |
+          git checkout origin/main -- evaluation/ validation/ leaderboard/
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
