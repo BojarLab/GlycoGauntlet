@@ -30,9 +30,9 @@ def update_leaderboard(username, score, test_set='public'):
     f.write("| Rank | Username | Best F1 Score | Last F1 Score | Submissions | Last Submission |\n")
     f.write("|------|----------|---------------|---------------|-------------|------------------|\n")
     for rank, (user, data) in enumerate(sorted_scores, 1):
-      last_sub = max(data['submissions'], key=lambda x: x['timestamp'])['timestamp']
-      last_sub_date = datetime.fromisoformat(last_sub).strftime('%Y-%m-%d')
-      last_score = last_sub['score']
+      last_entry = max(data['submissions'], key = lambda x: x['timestamp'])
+      last_sub_date = datetime.fromisoformat(last_entry['timestamp']).strftime('%Y-%m-%d')
+      last_score = last_entry['score']
       f.write(
         f"| {rank} | {user} | {data['best_score']:.4f} | {last_score:.4f} | {len(data['submissions'])} | {last_sub_date} |\n")
 
