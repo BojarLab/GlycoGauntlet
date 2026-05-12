@@ -89,6 +89,7 @@ jobs:
           git config user.email "bot@github.com"
           git add leaderboard/ submissions/
           git commit -m "Update leaderboard for ${{ steps.submission_info.outputs.username }}" || echo "No changes to commit"
+          git pull --rebase origin main
           git push origin HEAD:main
       
       - name: Comment on PR
