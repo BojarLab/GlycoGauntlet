@@ -1,0 +1,9 @@
+m/z,RT,charge,top1_pred
+384.15,3.82,-1,Gal(b1-3)GalNAc
+691.24,10.52,-1,Gal(b1-3)[Neu5Gc(a2-6)]GalNAc
+675.24,10.6,-1,Gal(b1-3)[Neu5Ac(a2-6)]GalNAc
+691.24,12.48,-1,Neu5Gc(a2-3)Gal(b1-3)GalNAc
+675.24,12.7,-1,Neu5Ac(a2-3)Gal(b1-3)GalNAc
+966.34,13.94,-1,Neu5Ac(a2-3)Gal(b1-3)[Neu5Ac(a2-6)]GalNAc
+759.78,15.53,-2,{Gal(b1-3/4)GlcNAc(b1-3)}GlcNAc(?1-3/4)Gal(b1-3/4)GlcNAc(b1-6)[GlcNAc(?1-3/4)Gal(b1-3)]GalNAc
+1056.37,17.94,-1,Neu5Gc(a2-3)Gal(b1-3)[Gal(b1-4)GlcNAc(b1-6)]GalNAc
