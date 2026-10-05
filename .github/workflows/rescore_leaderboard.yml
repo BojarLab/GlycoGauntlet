@@ -1,0 +1,43 @@
+name: Rescore Leaderboard
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rescore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy scipy openpyxl glycowork
+
+      - name: Rescore and commit
+        run: |
+          git config user.name "Competition Bot"
+          git config user.email "bot@github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            python leaderboard/update_leaderboard.py --rescore public | tee rescore_log.txt
+            git add leaderboard/
+            git commit -m "Rescore public leaderboard with current evaluator"
+            if git push origin HEAD:main; then
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              cat rescore_log.txt >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              cat leaderboard/public.md >> $GITHUB_STEP_SUMMARY
+              exit 0
+            fi
+            sleep $((RANDOM % 10 + 5))
+          done
+          exit 1
