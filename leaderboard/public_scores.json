@@ -9,61 +9,96 @@
     ]
   },
   "CandyCrunch": {
-    "best_score": 0.7577,
+    "best_score": 0.7182,
     "submissions": [
       {
         "score": 0.5431,
-        "timestamp": "2025-11-17T13:50:16.163809"
+        "timestamp": "2025-11-17T13:50:16.163809",
+        "legacy": true
       },
       {
         "score": 0.7403,
-        "timestamp": "2025-11-28T12:23:36.731443"
+        "timestamp": "2025-11-28T12:23:36.731443",
+        "legacy": true
       },
       {
         "score": 0.7577,
-        "timestamp": "2026-04-17T11:36:51.366502"
+        "timestamp": "2026-04-17T11:36:51.366502",
+        "legacy": true
+      },
+      {
+        "score": 0.7182,
+        "precision": 0.8918,
+        "recall": 0.616,
+        "timestamp": "2026-04-17T11:36:51.366502",
+        "rescored": true,
+        "rescored_at": "2026-10-05T12:04:06.751095"
       }
     ]
   },
   "Metformin-121": {
-    "best_score": 0.9988,
+    "best_score": 0.7144,
     "submissions": [
       {
         "score": 0.9767,
-        "timestamp": "2026-04-17T07:45:21.442726"
+        "timestamp": "2026-04-17T07:45:21.442726",
+        "legacy": true
       },
       {
         "score": 0.9988,
-        "timestamp": "2026-04-17T11:56:56.246708"
+        "timestamp": "2026-04-17T11:56:56.246708",
+        "legacy": true
       },
       {
         "score": 0.6519,
-        "timestamp": "2026-05-09T03:13:15.902772"
+        "timestamp": "2026-05-09T03:13:15.902772",
+        "legacy": true
       },
       {
         "score": 0.7882,
-        "timestamp": "2026-05-12T03:04:39.555589"
+        "timestamp": "2026-05-12T03:04:39.555589",
+        "legacy": true
       },
       {
         "score": 0.8118,
-        "timestamp": "2026-05-12T03:06:25.885576"
+        "timestamp": "2026-05-12T03:06:25.885576",
+        "legacy": true
       },
       {
         "score": 0.7882,
-        "timestamp": "2026-05-12T06:42:01.744771"
+        "timestamp": "2026-05-12T06:42:01.744771",
+        "legacy": true
       },
       {
         "score": 0.8118,
-        "timestamp": "2026-05-14T14:34:12.247765"
+        "timestamp": "2026-05-14T14:34:12.247765",
+        "legacy": true
+      },
+      {
+        "score": 0.7144,
+        "precision": 0.8103,
+        "recall": 0.6852,
+        "timestamp": "2026-05-14T14:34:12.247765",
+        "rescored": true,
+        "rescored_at": "2026-10-05T12:04:11.664297"
       }
     ]
   },
   "Protea_Check": {
-    "best_score": 0.9973,
+    "best_score": 0.1663,
     "submissions": [
       {
         "score": 0.9973,
-        "timestamp": "2026-04-23T06:03:46.562621"
+        "timestamp": "2026-04-23T06:03:46.562621",
+        "legacy": true
+      },
+      {
+        "score": 0.1663,
+        "precision": 0.1667,
+        "recall": 0.1659,
+        "timestamp": "2026-04-23T06:03:46.562621",
+        "rescored": true,
+        "rescored_at": "2026-10-05T12:04:12.568288"
       }
     ]
   }
