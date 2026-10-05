@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch_ref || github.head_ref }}
           fetch-depth: 0
@@ -39,9 +39,9 @@ jobs:
           git checkout origin/main -- evaluation/ validation/ leaderboard/
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |
@@ -57,8 +57,8 @@ jobs:
             echo "issue_number=${{ github.event.inputs.issue_number }}" >> $GITHUB_OUTPUT
           else
             CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
-            SUBMISSION_DIR=$(echo "$CHANGED_FILES" | grep "submissions/" | head -1 | cut -d'/' -f1-3 | sort -u)
-            USERNAME=$(echo "$SUBMISSION_DIR" | cut -d'/' -f2)
+            USERNAME=$(echo "$CHANGED_FILES" | grep "^submissions/" | head -1 | cut -d'/' -f2)
+            SUBMISSION_DIR=submissions/$USERNAME/public
             echo "submission_dir=$SUBMISSION_DIR" >> $GITHUB_OUTPUT
             echo "username=$USERNAME" >> $GITHUB_OUTPUT
             echo "issue_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
@@ -74,26 +74,30 @@ jobs:
           RESULT=$(python evaluation/evaluate_submission.py ${{ steps.submission_info.outputs.submission_dir }})
           SCORE=$(echo "$RESULT" | grep "OVERALL F1 SCORE:" | awk '{print $4}')
           echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "precision=$(echo "$RESULT" | grep "OVERALL PRECISION:" | awk '{print $3}')" >> $GITHUB_OUTPUT
+          echo "recall=$(echo "$RESULT" | grep "OVERALL RECALL:" | awk '{print $3}')" >> $GITHUB_OUTPUT
           echo "$RESULT" > eval_result.txt
       
-      - name: Update leaderboard
-        run: |
-          python leaderboard/update_leaderboard.py \
-            "${{ steps.submission_info.outputs.username }}" \
-            "${{ steps.evaluate.outputs.score }}" \
-            "public"
-      
-      - name: Commit leaderboard changes
+      - name: Update leaderboard and commit
         run: |
           git config user.name "Competition Bot"
           git config user.email "bot@github.com"
-          git add leaderboard/ submissions/
-          git commit -m "Update leaderboard for ${{ steps.submission_info.outputs.username }}" || echo "No changes to commit"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git add submissions/
+          git commit -m "Add submission from ${{ steps.submission_info.outputs.username }}" || echo "No changes to commit"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+            python leaderboard/update_leaderboard.py "${{ steps.submission_info.outputs.username }}" "${{ steps.evaluate.outputs.score }}" "public" "${{ steps.evaluate.outputs.precision }}" "${{ steps.evaluate.outputs.recall }}"
+            git add leaderboard/
+            git commit -m "Update leaderboard for ${{ steps.submission_info.outputs.username }}"
+            if git push origin HEAD:main; then exit 0; fi
+            git reset --hard HEAD~1
+            sleep $((RANDOM % 10 + 5))
+          done
+          exit 1
       
       - name: Comment on PR
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -107,7 +111,7 @@ jobs:
 
       - name: Delete submission branch
         if: github.event.inputs.branch_ref != 'main' && github.event.inputs.branch_ref != ''
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             try {
@@ -122,7 +126,7 @@ jobs:
 
       - name: Close issue
         if: github.event.inputs.issue_number != ''
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.update({

@@ -5,13 +5,24 @@ import os
 from io import StringIO
 import sys
 import base64
+import re
 from datetime import datetime
 sys.path.append('validation')
-from check_format import validate_submission, parse_gwp
+sys.path.append('evaluation')
+from check_format import validate_df, parse_gwp, expected_submission_files
+from evaluate_submission import evaluate_predictions
 
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 REPO_OWNER = os.environ.get('REPO_OWNER', 'BojarLab')
 REPO_NAME = os.environ.get('REPO_NAME', 'GlycoGauntlet')
+
+def read_upload(file):
+  file.seek(0)
+  if file.name.endswith('.gwp'):
+    df = parse_gwp(file)
+    return file.name[:-4].removesuffix('_submission') + '_submission.csv', df, df.to_csv(index=True).encode()
+  df = pd.read_csv(file, encoding='utf-8-sig')
+  return file.name, df, file.getvalue()
 
 st.set_page_config(page_title="GlycoGauntlet Submission", page_icon="🍬", layout="wide")
 st.title("🍬 GlycoGauntlet Submission Portal")
@@ -43,39 +54,50 @@ if test_type in ["Private Test (final evaluation only)", "Both"]:
   st.subheader("🔒 Private Test Predictions")
   private_files = st.file_uploader("Upload your private test CSV or GlycoWorkbench files", type=['csv', 'gwp'], accept_multiple_files=True, key="private")
 
+if st.button("Preview public score (does not submit)", disabled=not public_files):
+  with st.spinner("Scoring against the public solutions..."):
+    solution_files = sorted(f for f in os.listdir('data/public_test') if f.endswith('_solution.csv'))
+    uploaded = {}
+    for file in public_files:
+      name, df, _ = read_upload(file)
+      errors = validate_df(df, name)
+      if name.replace('_submission.csv', '_solution.csv') not in solution_files:
+        errors.append(f"{name}: not a public test file name")
+      for error in errors:
+        st.write(f"❌ {error}")
+      if not errors:
+        uploaded[name.replace('_submission.csv', '_solution.csv')] = df
+    rows = []
+    for solution_file in solution_files:
+      if solution_file in uploaded:
+        f1, precision, recall, _, _, tp, fp, fn, _ = evaluate_predictions(uploaded[solution_file], pd.read_csv(f'data/public_test/{solution_file}', encoding='utf-8-sig'))
+        rows.append({'File': solution_file.replace('_solution.csv', ''), 'F1': f1, 'Precision': precision, 'Recall': recall, 'False positives': f"{fp:.0f}", 'False negatives': f"{fn:.1f}"})
+      else:
+        rows.append({'File': solution_file.replace('_solution.csv', ''), 'F1': 0.0, 'Precision': 0.0, 'Recall': 0.0, 'False positives': '-', 'False negatives': '-'})
+    preview = pd.DataFrame(rows)
+    st.metric("Projected overall F1", f"{preview['F1'].mean():.4f}")
+    st.caption("Mean over all public test files. Files not uploaded here count as 0, unless you submitted them earlier under the same name.")
+    st.dataframe(preview.style.format({'F1': '{:.4f}', 'Precision': '{:.4f}', 'Recall': '{:.4f}'}), hide_index=True)
+
 agree = st.checkbox("I confirm my files follow the required format")
 
 if st.button("Submit Predictions", disabled=not agree or not username or (not public_files and not private_files)):
   if not GITHUB_TOKEN:
     st.error("GitHub token not configured. Please contact the competition organizers.")
     st.stop()
+  username = re.sub(r'[^A-Za-z0-9_.-]', '_', username.strip())
   with st.spinner("Validating and submitting your predictions..."):
     try:
       validation_errors = []
-      converted_public = {}
-      if public_files:
-        for file in public_files:
-          if file.name.endswith('.gwp'):
-            df = parse_gwp(file)
-            new_name = file.name.replace('.gwp', '_submission.csv')
-            converted_public[new_name] = df
-            file._name = new_name
-          else:
-            df = pd.read_csv(file)
-          required_cols = ['m/z', 'RT', 'charge', 'top1_pred']
-          missing_cols = [col for col in required_cols if col not in df.columns]
-          if missing_cols:
-            validation_errors.append(f"{file.name}: Missing columns {missing_cols}")
-          if not pd.api.types.is_numeric_dtype(df['m/z']):
-            validation_errors.append(f"{file.name}: m/z must be numeric")
-          if not pd.api.types.is_numeric_dtype(df['RT']):
-            validation_errors.append(f"{file.name}: RT must be numeric")
-          if not pd.api.types.is_integer_dtype(df['charge']):
-            validation_errors.append(f"{file.name}: charge must be integer")
-          if df['top1_pred'].isna().all():
-            validation_errors.append(f"{file.name}: top1_pred column is empty")
-          if len(df) == 0:
-            validation_errors.append(f"{file.name}: File is empty")
+      uploads = {'public': [], 'private': []}
+      for test_type_key, files in [('public', public_files), ('private', private_files)]:
+        expected = expected_submission_files(f'data/{test_type_key}_test')
+        for file in files or []:
+          name, df, content = read_upload(file)
+          if name not in expected:
+            validation_errors.append(f"{name}: not a {test_type_key} test file name, expected one of {sorted(expected)}")
+          validation_errors.extend(validate_df(df, name))
+          uploads[test_type_key].append((name, base64.b64encode(content).decode('utf-8')))
       if validation_errors:
         st.error("Validation failed:")
         for error in validation_errors:
@@ -94,24 +116,16 @@ if st.button("Submit Predictions", disabled=not agree or not username or (not pu
         st.error(f"Failed to create branch: {ref_response.text}")
         st.stop()
       file_urls = {'public': [], 'private': []}
-      for test_type_key, files in [('public', public_files), ('private', private_files)]:
-        if not files:
-          continue
-        for file in files:
-          if file.name in converted_public:
-            csv_bytes = converted_public[file.name].to_csv(index = True).encode()
-            content = base64.b64encode(csv_bytes).decode('utf-8')
-          else:
-            file.seek(0)
-            content = base64.b64encode(file.read()).decode('utf-8')
-          file_path = f"submissions/{username}/{test_type_key}/{file.name}"
-          file_data = {'message': f'Add {file.name}', 'content': content, 'branch': branch_name}
+      for test_type_key, files in uploads.items():
+        for name, content in files:
+          file_path = f"submissions/{username}/{test_type_key}/{name}"
+          file_data = {'message': f'Add {name}', 'content': content, 'branch': branch_name}
           existing_response = requests.get(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{file_path}?ref={branch_name}', headers=headers)
           if existing_response.status_code == 200:
             file_data['sha'] = existing_response.json()['sha']
           file_response = requests.put(f'https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{file_path}', json=file_data, headers=headers)
           if file_response.status_code not in [201, 200]:
-            st.error(f"Failed to upload {file.name}: {file_response.text}")
+            st.error(f"Failed to upload {name}: {file_response.text}")
             st.stop()
           raw_url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{branch_name}/{file_path}"
           file_urls[test_type_key].append(raw_url)

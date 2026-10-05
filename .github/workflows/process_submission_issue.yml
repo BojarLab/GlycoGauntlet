@@ -14,12 +14,14 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
       
       - name: Extract username
         id: extract
+        env:
+          BODY: ${{ github.event.issue.body }}
         run: |
-          USERNAME=$(echo "${{ github.event.issue.body }}" | sed -n '/GitHub Username or Model Name/,/^###/p' | sed '1d;$d' | xargs)
+          USERNAME=$(echo "$BODY" | sed -n '/GitHub Username or Model Name/,/^###/p' | sed '1d;$d' | tr -d '\r' | sed '/^[[:space:]]*$/d' | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/[^A-Za-z0-9_.-]/_/g')
           if [ -z "$USERNAME" ]; then
             echo "ERROR: Could not extract username from submission"
             exit 1
@@ -29,7 +31,7 @@ jobs:
       
       - name: Download attachments
         id: download
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -110,9 +112,9 @@ jobs:
           fi
       
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.10'
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |
@@ -126,6 +128,11 @@ jobs:
               echo "validation_failed=true" >> $GITHUB_OUTPUT
             fi
           fi
+          if [ "${{ steps.download.outputs.has_private }}" == "true" ]; then
+            if ! python validation/check_format.py submissions/${{ steps.extract.outputs.username }}/private >> validation_output.txt 2>&1; then
+              echo "validation_failed=true" >> $GITHUB_OUTPUT
+            fi
+          fi
       
       - name: Evaluate submission
         if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true'
@@ -136,30 +143,38 @@ jobs:
           RESULT=$(python evaluation/evaluate_submission.py submissions/${{ steps.extract.outputs.username }}/public 2>&1) || echo "EVALUATION_FAILED"
           SCORE=$(echo "$RESULT" | grep "OVERALL F1 SCORE:" | awk '{print $4}')
           echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "precision=$(echo "$RESULT" | grep "OVERALL PRECISION:" | awk '{print $3}')" >> $GITHUB_OUTPUT
+          echo "recall=$(echo "$RESULT" | grep "OVERALL RECALL:" | awk '{print $3}')" >> $GITHUB_OUTPUT
           echo "$RESULT" > eval_result.txt
           if [ -z "$SCORE" ]; then
             echo "evaluation_failed=true" >> $GITHUB_OUTPUT
           fi
       
-      - name: Update leaderboard
-        if: steps.validate.outputs.validation_failed != 'true' && steps.download.outputs.has_public == 'true' && steps.evaluate.outputs.evaluation_failed != 'true'
-        run: |
-          python leaderboard/update_leaderboard.py \
-            "${{ steps.extract.outputs.username }}" \
-            "${{ steps.evaluate.outputs.score }}" \
-            "public"
-      
-      - name: Commit changes
+      - name: Commit changes and update leaderboard
         if: steps.validate.outputs.validation_failed != 'true'
         run: |
           git config user.name "Competition Bot"
           git config user.email "bot@github.com"
-          git add leaderboard/ submissions/
+          git add submissions/
           git commit -m "Add submission from ${{ steps.extract.outputs.username }}" || echo "No changes"
-          git push
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+            LEADERBOARD_COMMIT=false
+            if [ -n "${{ steps.evaluate.outputs.score }}" ]; then
+              python leaderboard/update_leaderboard.py "${{ steps.extract.outputs.username }}" "${{ steps.evaluate.outputs.score }}" "public" "${{ steps.evaluate.outputs.precision }}" "${{ steps.evaluate.outputs.recall }}"
+              git add leaderboard/
+              git commit -m "Update leaderboard for ${{ steps.extract.outputs.username }}"
+              LEADERBOARD_COMMIT=true
+            fi
+            if git push origin HEAD:main; then exit 0; fi
+            if [ "$LEADERBOARD_COMMIT" == "true" ]; then git reset --hard HEAD~1; fi
+            sleep $((RANDOM % 10 + 5))
+          done
+          exit 1
       
       - name: Comment results on issue
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             const validation_failed = '${{ steps.validate.outputs.validation_failed }}' === 'true';
@@ -199,7 +214,7 @@ jobs:
             
       - name: Close issue
         if: steps.validate.outputs.validation_failed != 'true' && steps.evaluate.outputs.evaluation_failed != 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.update({
@@ -210,7 +225,7 @@ jobs:
             });
       - name: Delete submission branch
         if: steps.validate.outputs.validation_failed != 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             const issue = context.payload.issue;
@@ -229,7 +244,7 @@ jobs:
             }
       - name: Delete submission branch on failure
         if: always() && steps.validate.outputs.validation_failed == 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             const issue = context.payload.issue;

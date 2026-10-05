@@ -14,7 +14,7 @@ If you provide submissions for private files (one submission per file), you will
 
 ## Evaluation
 
-Your predictions are matched to ground truth spectra using mass (±0.5 Da) and retention time (±1.0 min) tolerance. Scoring uses a soft F1 metric where exact structural matches get 1.0 and partial matches get cosine similarity based on motif fingerprints. False positives and false negatives are penalized. See `evaluation/evaluate_submission.py` for the exact implementation.
+Your predictions are matched one-to-one to ground truth spectra using mass (±0.5 Da, as reported m/z or charge-normalized) and retention time (±1.0 min) tolerance, using the globally closest assignment. Scoring uses a soft F1 metric where exact structural matches get 1.0 and partial matches get cosine similarity based on motif fingerprints. False positives (predicted peaks without a ground truth counterpart) and false negatives are penalized. The overall score is the mean F1 across all test files, and every file you do not submit counts as F1=0. See `evaluation/evaluate_submission.py` for the exact implementation.
 
 Public file submissions are immediately scored and scores will be displayed on a public leaderboard. Private file submissions will also be scored but scores will be hidden until the end of the competition. You can submit as many attempts as you want
 
@@ -28,14 +28,14 @@ Public file submissions are immediately scored and scores will be displayed on a
 
 ## Submission Format
 
-Your predictions must be Excel files matching the input filenames, with this exact structure:
+Your predictions must be CSV files named after the input files with a `_submission.csv` suffix (e.g., `JC_171002Y1_submission.csv`), with this exact structure (GlycoWorkbench `.gwp` files are also accepted on the [web portal](https://glycogauntlet.streamlit.app/) and converted automatically):
 
 | Column | Type | Description |
 |--------|------|-------------|
 | m/z | float | Observed mass-to-charge ratio |
 | charge | int | Signed charge (e.g., -1 for negative mode) |
 | RT | float | Retention time in minutes |
-| top1_pred | str | Predicted glycan in IUPAC-condensed notation |
+| top1_pred | str | Predicted glycan, ideally in IUPAC-condensed notation (GlyTouCan IDs, WURCS, GlycoCT, and other common notations are converted automatically) |
 
 Index should be integer row numbers. Additional columns (confidence scores, alternative predictions) are allowed but ignored.
 
@@ -49,7 +49,7 @@ m/z: 1235.19, charge: -1, RT: 17.63, top1_pred: Man(a1-3)[Man(a1-6)]Man(a1-6)[Ma
 1. Prepare your prediction CSV files following the format above
 2. Validate locally: `python validation/check_format.py your_predictions/`
 3. Go to [Issues](../../issues/new/choose) and select "Submit Predictions"
-4. Enter your GitHub username and attach your CSV files
+4. Enter your name or model name and attach your CSV files
 5. Submit the issue
 
 A bot will automatically create a PR, run evaluation, and update the leaderboard. Check the issue for status updates.
@@ -57,7 +57,7 @@ Alternatively, you can submit your annotations on our [web portal](https://glyco
 
 ## Baseline
 
-CandyCrunch2 (our model) achieves F1=0.75 on the public test. Code: https://github.com/BojarLab/CandyCrunch
+CandyCrunch2 (our model) achieves F1=0.72 on the public test. Code: https://github.com/BojarLab/CandyCrunch
 
 To generate baseline predictions:
 ```python
@@ -70,11 +70,11 @@ preds.to_csv("submissions/baseline/public/example_submission.csv")
 
 See [leaderboard/public.md](leaderboard/public.md) for current rankings on public test set. Note that people may simply submit the solutions to the public test set, so consider perfect-ish solutions with caution:-)
 
-Final rankings on private test set will be revealed after competition closes on October 2026 (tentative).
+Final rankings on private test set will be revealed after competition closes on December 2026 (tentative).
 
 ## Manual Annotation
 
-You don't need code. Annotate spectra in Excel, format as above, submit. Many of the best glycomics annotations come from expert knowledge, not algorithms. If you do submit manual annotations, we would me much obliged if you could note down how long each file approximately took you
+You don't need code. Annotate spectra in Excel, format as above, submit. Many of the best glycomics annotations come from expert knowledge, not algorithms. If you do submit manual annotations, we would be much obliged if you could note down how long each file approximately took you
 
 Submit your solutions [here](https://glycogauntlet.streamlit.app/)
 
