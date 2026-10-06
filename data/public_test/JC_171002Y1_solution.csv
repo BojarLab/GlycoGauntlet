@@ -1,6 +1,5 @@
-﻿m/z,RT,charge,top1_pred
+m/z,RT,charge,top1_pred
 384.1,6.75,-1,Gal(b1-3)GalNAc
-519.67,15.78,-2,Neu5Ac(a2-3)Gal(b1-3)[Gal(b1-4)GlcNAc(b1-6)]GalNAc
 530.1,12.56,-1,Gal(b1-4)GlcNAc(b1-3)Fuc
 530.1,19.91,-1,Fuc(a1-2)Gal(b1-3)GalNAc
 587.1,9.42,-1,Gal(b1-3)[GlcNAc(b1-6)]GalNAc
