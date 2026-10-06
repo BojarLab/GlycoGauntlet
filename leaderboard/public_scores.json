@@ -9,7 +9,7 @@
     ]
   },
   "CandyCrunch": {
-    "best_score": 0.7182,
+    "best_score": 0.7875,
     "submissions": [
       {
         "score": 0.5431,
@@ -32,12 +32,21 @@
         "recall": 0.616,
         "timestamp": "2026-04-17T11:36:51.366502",
         "rescored": true,
-        "rescored_at": "2026-10-05T12:04:06.751095"
+        "rescored_at": "2026-10-05T12:04:06.751095",
+        "legacy": true
+      },
+      {
+        "score": 0.7875,
+        "precision": 0.8647,
+        "recall": 0.7405,
+        "timestamp": "2026-04-17T11:36:51.366502",
+        "rescored": true,
+        "rescored_at": "2026-10-06T09:49:20.134513"
       }
     ]
   },
   "Metformin-121": {
-    "best_score": 0.7144,
+    "best_score": 0.7077,
     "submissions": [
       {
         "score": 0.9767,
@@ -80,12 +89,21 @@
         "recall": 0.6852,
         "timestamp": "2026-05-14T14:34:12.247765",
         "rescored": true,
-        "rescored_at": "2026-10-05T12:04:11.664297"
+        "rescored_at": "2026-10-05T12:04:11.664297",
+        "legacy": true
+      },
+      {
+        "score": 0.7077,
+        "precision": 0.7984,
+        "recall": 0.6766,
+        "timestamp": "2026-05-14T14:34:12.247765",
+        "rescored": true,
+        "rescored_at": "2026-10-06T09:49:24.643546"
       }
     ]
   },
   "Protea_Check": {
-    "best_score": 0.1663,
+    "best_score": 0.1592,
     "submissions": [
       {
         "score": 0.9973,
@@ -98,7 +116,16 @@
         "recall": 0.1659,
         "timestamp": "2026-04-23T06:03:46.562621",
         "rescored": true,
-        "rescored_at": "2026-10-05T12:04:12.568288"
+        "rescored_at": "2026-10-05T12:04:12.568288",
+        "legacy": true
+      },
+      {
+        "score": 0.1592,
+        "precision": 0.1573,
+        "recall": 0.1611,
+        "timestamp": "2026-04-23T06:03:46.562621",
+        "rescored": true,
+        "rescored_at": "2026-10-06T09:49:25.541151"
       }
     ]
   }
