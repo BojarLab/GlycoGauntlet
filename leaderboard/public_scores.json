@@ -41,18 +41,28 @@
         "recall": 0.7405,
         "timestamp": "2026-04-17T11:36:51.366502",
         "rescored": true,
-        "rescored_at": "2026-10-06T09:49:20.134513"
+        "rescored_at": "2026-10-06T09:49:20.134513",
+        "legacy": true
       },
       {
         "score": 0.8201,
         "timestamp": "2026-10-10T12:15:28.046468",
         "precision": 0.909,
-        "recall": 0.7611
+        "recall": 0.7611,
+        "legacy": true
+      },
+      {
+        "score": 0.8201,
+        "precision": 0.909,
+        "recall": 0.7611,
+        "timestamp": "2026-10-10T12:15:28.046468",
+        "rescored": true,
+        "rescored_at": "2026-10-10T12:17:20.791545"
       }
     ]
   },
   "Metformin-121": {
-    "best_score": 0.7077,
+    "best_score": 0.6865,
     "submissions": [
       {
         "score": 0.9767,
@@ -104,12 +114,21 @@
         "recall": 0.6766,
         "timestamp": "2026-05-14T14:34:12.247765",
         "rescored": true,
-        "rescored_at": "2026-10-06T09:49:24.643546"
+        "rescored_at": "2026-10-06T09:49:24.643546",
+        "legacy": true
+      },
+      {
+        "score": 0.6865,
+        "precision": 0.7984,
+        "recall": 0.6373,
+        "timestamp": "2026-05-14T14:34:12.247765",
+        "rescored": true,
+        "rescored_at": "2026-10-10T12:17:23.129501"
       }
     ]
   },
   "Protea_Check": {
-    "best_score": 0.1592,
+    "best_score": 0.1526,
     "submissions": [
       {
         "score": 0.9973,
@@ -131,7 +150,16 @@
         "recall": 0.1611,
         "timestamp": "2026-04-23T06:03:46.562621",
         "rescored": true,
-        "rescored_at": "2026-10-06T09:49:25.541151"
+        "rescored_at": "2026-10-06T09:49:25.541151",
+        "legacy": true
+      },
+      {
+        "score": 0.1526,
+        "precision": 0.1573,
+        "recall": 0.1482,
+        "timestamp": "2026-04-23T06:03:46.562621",
+        "rescored": true,
+        "rescored_at": "2026-10-10T12:17:23.578437"
       }
     ]
   }
