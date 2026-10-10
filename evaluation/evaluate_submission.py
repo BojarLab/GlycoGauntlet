@@ -8,6 +8,7 @@ from scipy.optimize import linear_sum_assignment
 from glycowork.motif.processing import canonicalize_iupac
 from glycowork.motif.graph import compare_glycans, get_possible_topologies, graph_to_string
 from glycowork.motif.annotate import annotate_dataset
+from glycowork.motif.tokenization import PROTON_MASS
 
 MASS_TOLERANCE = 0.5
 RT_TOLERANCE = 1.0
@@ -19,7 +20,8 @@ def get_glycan_similarity(glycan1, glycan2):
 def match_spectra(array1, array2, mass_threshold=MASS_TOLERANCE, rt_threshold=RT_TOLERANCE, array1_alt=None, array2_alt=None):
   array1_alt = array1 if array1_alt is None else array1_alt
   array2_alt = array2 if array2_alt is None else array2_alt
-  mass_diffs = np.minimum(np.abs(array1[:, None, 0] - array2[None, :, 0]), np.abs(array1_alt[:, None, 0] - array2_alt[None, :, 0]))
+  # fmin, so a row without a charge (NaN singly charged equivalent) still matches on its m/z
+  mass_diffs = np.fmin(np.abs(array1[:, None, 0] - array2[None, :, 0]), np.abs(array1_alt[:, None, 0] - array2_alt[None, :, 0]))
   rt_diffs = np.abs(array1[:, None, 1] - array2[None, :, 1])
   feasible = (mass_diffs <= mass_threshold) & (rt_diffs <= rt_threshold)
   rows, cols = linear_sum_assignment(np.where(feasible, mass_diffs / mass_threshold + rt_diffs / rt_threshold, 1e6))
@@ -46,11 +48,12 @@ def evaluate_predictions(predictions, gt, rt_col='RT'):
   if 'charge' not in predictions.columns:
     predictions['charge'] = -1
   gt_charges = gt['charge'] if 'charge' in gt.columns else pd.Series(-1, index=gt.index)
-  predictions['converted_masses'] = [m_z * abs(charge) + (abs(charge) - 1) for m_z, charge in zip(predictions['m/z'], predictions['charge'])]
+  # Singly charged equivalent of a z-fold charged ion (one proton per extra charge, sign-aware)
+  predictions['converted_masses'] = [m_z * abs(charge) - (charge - np.sign(charge)) * PROTON_MASS for m_z, charge in zip(predictions['m/z'], predictions['charge'])]
   pairs = predictions[['m/z', 'RT']].round(2).values
   pairs_converted = predictions[['converted_masses', 'RT']].round(2).values
   gt_pairs = gt.reset_index()[['m/z', rt_col]].round(2).values
-  gt_pairs_converted = np.column_stack([[m_z * abs(charge) + (abs(charge) - 1) for m_z, charge in zip(gt['m/z'], gt_charges)], gt[rt_col]]).round(2)
+  gt_pairs_converted = np.column_stack([[m_z * abs(charge) - (charge - np.sign(charge)) * PROTON_MASS for m_z, charge in zip(gt['m/z'], gt_charges)], gt[rt_col]]).round(2)
   matched_pairs = match_spectra(gt_pairs, pairs, mass_threshold=MASS_TOLERANCE, rt_threshold=RT_TOLERANCE, array1_alt=gt_pairs_converted, array2_alt=pairs_converted)
   merge_df = gt[['m/z', rt_col, 'top1_pred']].reset_index(drop=True)
   new_md = add_pred_column(merge_df, 'batch_pred', matched_pairs, predictions.reset_index(), rt_col)
@@ -73,7 +76,8 @@ def evaluate_predictions(predictions, gt, rt_col='RT'):
   tp = new_md[new_md['top1_pred'].notnull()]['similarity_score'].sum() + 0.5 * unevaluable
   empty_glycan_not_predicted = len(np.where((new_md['in_ground_truth'])&(new_md['top1_pred'].isnull())&(new_md['batch_pred'].isnull()))[0])
   unevaluable += empty_glycan_not_predicted
-  fn = (new_md[new_md['top1_pred'].notnull()]['similarity_score'].apply(lambda x: 1-x)).sum()
+  # A GT peak without a structure weighs half both ways: a prediction there earns 0.5 TP, missing it costs 0.5 FN (a miss used to cost nothing)
+  fn = (new_md[new_md['top1_pred'].notnull()]['similarity_score'].apply(lambda x: 1-x)).sum() + 0.5 * empty_glycan_not_predicted
   peaks_not_picked = len(np.where((new_md['in_ground_truth'])&(new_md['batch_pred'].isnull()))[0])
   incorrect_predictions = len(np.where((new_md['top1_pred'].notnull()) & (new_md['batch_pred'].notnull()) & (new_md['similarity_score'] < 1.0))[0])
   precision = tp / (tp + fp + 1e-8)
@@ -92,7 +96,7 @@ def evaluate_submission(submission_dir, test_dir="data/public_test"):
       results[test_file] = {'F1': 0.0, 'Precision': 0.0, 'Recall': 0.0, 'TP': 0, 'FP': 0, 'FN': 0, 'Unevaluable': 0, 'submitted': False}
       continue
     predictions = pd.read_csv(submission_path, encoding='utf-8-sig')
-    gt = pd.read_csv(os.path.join(test_dir, test_file))
+    gt = pd.read_csv(os.path.join(test_dir, test_file), encoding='utf-8-sig')
     rt_col = 'RT' if 'RT' in gt.columns else test_file.split('.')[0] + '_RT'
     f1, precision, recall, peaks_not_picked, incorrect, tp, fp, fn, unevaluable = evaluate_predictions(predictions, gt, rt_col)
     results[test_file] = {'F1': f1, 'Precision': precision, 'Recall': recall, 'TP': tp, 'FP': fp, 'FN': fn, 'Unevaluable': unevaluable, 'submitted': True}

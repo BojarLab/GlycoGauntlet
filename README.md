@@ -14,7 +14,7 @@ If you provide submissions for private files (one submission per file), you will
 
 ## Evaluation
 
-Your predictions are matched one-to-one to ground truth spectra using mass (±0.5 Da, as reported m/z or charge-normalized) and retention time (±1.0 min) tolerance, using the globally closest assignment. Scoring uses a soft F1 metric where exact structural matches get 1.0 and partial matches get cosine similarity based on motif fingerprints. False positives (predicted peaks without a ground truth counterpart) and false negatives are penalized. The overall score is the mean F1 across all test files, and every file you do not submit counts as F1=0. See `evaluation/evaluate_submission.py` for the exact implementation.
+Your predictions are matched one-to-one to ground truth spectra using mass (±0.5 Da, as reported m/z or charge-normalized) and retention time (±1.0 min) tolerance, using the globally closest assignment. Scoring uses a soft F1 metric where exact structural matches get 1.0 and partial matches get cosine similarity based on motif fingerprints. False positives (predicted peaks without a ground truth counterpart) and false negatives are penalized. Ground truth peaks without an assigned structure count half: a prediction there earns 0.5 true positive, missing one costs 0.5 false negative. The overall score is the mean F1 across all test files, and every file you do not submit counts as F1=0. See `evaluation/evaluate_submission.py` for the exact implementation.
 
 Public file submissions are immediately scored and scores will be displayed on a public leaderboard. Private file submissions will also be scored but scores will be hidden until the end of the competition. You can submit as many attempts as you want
 
