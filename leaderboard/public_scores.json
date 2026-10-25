@@ -62,7 +62,7 @@
     ]
   },
   "Metformin-121": {
-    "best_score": 0.6865,
+    "best_score": 0.7719,
     "submissions": [
       {
         "score": 0.9767,
@@ -124,6 +124,12 @@
         "timestamp": "2026-05-14T14:34:12.247765",
         "rescored": true,
         "rescored_at": "2026-10-10T12:17:23.129501"
+      },
+      {
+        "score": 0.7719,
+        "timestamp": "2026-10-25T01:25:46.981704",
+        "precision": 0.7719,
+        "recall": 0.8214
       }
     ]
   },
